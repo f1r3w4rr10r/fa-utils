@@ -110,6 +110,13 @@
     return selected;
   }
 
+  const sectionHeader = document.querySelector(".section-header");
+
+  const unwatchedSelectMessage = document.createElement("p");
+  unwatchedSelectMessage.textContent =
+    "Checking for submissions from unwatched users…";
+  sectionHeader.appendChild(unwatchedSelectMessage);
+
   const watched = await getWatched();
 
   console.log("Currently watching: ", watched.length);
@@ -120,5 +127,5 @@
 
   console.log(message);
 
-  document.querySelector(".section-header h2").textContent += ` | ${message}`;
+  unwatchedSelectMessage.textContent = message;
 })();
