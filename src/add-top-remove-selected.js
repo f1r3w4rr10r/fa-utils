@@ -6,6 +6,7 @@
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
+// @license      MIT
 // @grant        none
 // ==/UserScript==
 
