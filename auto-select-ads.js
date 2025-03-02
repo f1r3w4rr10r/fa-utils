@@ -14,10 +14,15 @@
 
   /**
    * @typedef {Object} AdvertisementCheckSpec
-   * @property {string[]} mustHaveKeywords
+   * @property {string[]} triggerKeywords - any of these trigger a closer look
    * @property {boolean} [definitelyAdvertisement]
+   *     - a submission with any trigger keyword is definitely an advertisement
    * @property {string[]} [definitelyAdvertisementKeywords]
+   *     - a submission with any trigger keyword and any of these keywords is an
+   *     advertisement
    * @property {string[]} [definitelyNotAdvertisementKeywords]
+   *     - an already checked submission with any of these keywords is
+   *     definitely not an advertisement. This overrides everything else.
    */
 
   /**
@@ -27,28 +32,20 @@
   /** @type {AdvertisementCheckSpec[]} */
   const advertisementCheckSpecs = [
     {
-      mustHaveKeywords: ["adopt"],
+      triggerKeywords: ["adopt", "picarto.tv", "reminder", "streaming"],
       definitelyAdvertisement: true,
     },
     {
-      mustHaveKeywords: ["reminder"],
-      definitelyAdvertisement: true,
-    },
-    {
-      mustHaveKeywords: ["streaming", "picarto.tv"],
-      definitelyAdvertisement: true,
-    },
-    {
-      mustHaveKeywords: ["commission", "comm"],
+      triggerKeywords: ["commission", "comm"],
       definitelyAdvertisementKeywords: ["open", "closed"],
       definitelyNotAdvertisementKeywords: ["for"],
     },
     {
-      mustHaveKeywords: ["stream"],
+      triggerKeywords: ["stream"],
       definitelyAdvertisementKeywords: ["live", "online"],
     },
     {
-      mustHaveKeywords: ["ych"],
+      triggerKeywords: ["ych"],
       definitelyAdvertisementKeywords: [
         "auction",
         "closed",
@@ -60,15 +57,17 @@
       definitelyNotAdvertisementKeywords: [
         "commission",
         "finished",
+        "for",
         "from",
         "result",
       ],
     },
     {
-      mustHaveKeywords: ["rem"],
+      triggerKeywords: ["sale"],
+      definitelyAdvertisementKeywords: ["$", "price"],
     },
     {
-      mustHaveKeywords: ["open"],
+      triggerKeywords: ["open", "raffle", "rem"],
     },
   ];
 
@@ -81,7 +80,7 @@
     /** @type {AdvertisementCheckResult | null} */
     let result = null;
 
-    for (const keyword of spec.mustHaveKeywords) {
+    for (const keyword of spec.triggerKeywords) {
       if (name.includes(keyword)) {
         result = "ambiguous";
         break;
