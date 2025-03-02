@@ -39,6 +39,14 @@
       definitelyAdvertisement: true,
     },
     {
+      mustHaveKeywords: ["commissions"],
+      definitelyAdvertisementKeywords: ["open"],
+    },
+    {
+      mustHaveKeywords: ["stream"],
+      definitelyAdvertisementKeywords: ["live", "online"],
+    },
+    {
       mustHaveKeywords: ["ych"],
       definitelyAdvertisementKeywords: ["auction", "open", "reminder"],
       definitelyNotAdvertisementKeywords: ["finished"],
