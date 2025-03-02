@@ -55,22 +55,25 @@
       triggerExpressions: [/\bstream\b/i],
       definitelyAdvertisementExpressions: [
         /\blive\b/i,
+        /\boffline\b/i,
         /\bonline\b/i,
         /\bslots?\b/i,
       ],
     },
     {
-      triggerExpressions: [/ych/i],
+      triggerExpressions: [/y ?c ?h/i],
       definitelyAdvertisementExpressions: [
         /\bauction\b/i,
         /\bclosed\b/i,
         /\bmultislot\b/i,
-        /\bopen\b/i,
+        /\bo ?p ?e ?n\b/i,
         /\bprice\b/i,
+        /\bpreview\b/i,
         /\braffle\b/i,
-        /\brem(?:ind(?:er)?)?\b/i,
+        /\brem(?:ind(?:er)?)?\d*\b/i,
         /\brmd\b/i,
         /\bslots?\b/i,
+        /\bsold\b/i,
       ],
       definitelyNotAdvertisementExpressions: [
         /\bcommission\b/i,
@@ -81,8 +84,13 @@
       ],
     },
     {
-      triggerExpressions: [/\bsale\b/i],
-      definitelyAdvertisementExpressions: [/\$/, /\bbase\b/i, /\bprice\b/i],
+      triggerExpressions: [/\bdiscount\b/i, /\bsale\b/i],
+      definitelyAdvertisementExpressions: [
+        /\$/,
+        /\bbase\b/i,
+        /\b(?:multi)?slot\b/i,
+        /\bprice\b/i,
+      ],
     },
     {
       triggerExpressions: [/\bprice\b/i],
@@ -97,11 +105,16 @@
       definitelyAdvertisementExpressions: [/\bpreview\b/i],
     },
     {
+      triggerExpressions: [/\bshop\b/i],
+      definitelyAdvertisementExpressions: [/\bprint\b/i],
+    },
+    {
       triggerExpressions: [
         /\bopen\b/i,
-        /\brem\b/i,
         /\bpoll\b/i,
         /\bpreview\b/i,
+        /\brem\b/i,
+        /\b(?:multi)?slot\b/i,
       ],
     },
   ];
