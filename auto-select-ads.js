@@ -13,16 +13,17 @@
   "use strict";
 
   /**
+   * @typedef {Object} AdvertisementCheckSpecPart
+   * @property {RegExp[]} triggers
+   * @property {boolean} [isAlwaysAd]
+   * @property {RegExp[]} [isAdExpressions]
+   * @property {RegExp[]} [isNotAdExpressions]
+   */
+
+  /**
    * @typedef {Object} AdvertisementCheckSpec
-   * @property {RegExp[]} triggerExpressions - any of these trigger a closer look
-   * @property {boolean} [definitelyAdvertisement]
-   *     - a submission with any trigger keyword is definitely an advertisement
-   * @property {RegExp[]} [definitelyAdvertisementExpressions]
-   *     - a submission with any trigger keyword and any of these keywords is an
-   *     advertisement
-   * @property {RegExp[]} [definitelyNotAdvertisementExpressions]
-   *     - an already checked submission with any of these keywords is
-   *     definitely not an advertisement. This overrides everything else.
+   * @property {AdvertisementCheckSpecPart} name
+   * @property {AdvertisementCheckSpecPart} [tags]
    */
 
   /**
@@ -150,129 +151,143 @@
   /** @type {AdvertisementCheckSpec[]} */
   const advertisementCheckSpecs = [
     {
-      triggerExpressions: [
-        /\badopt(?:able)?s?\b/i,
-        /\bpicarto\.tv\b/i,
-        /\breminder+\b/i,
-        /\bstreaming\b/i,
-        /^REM$/,
-      ],
-      definitelyAdvertisement: true,
+      name: {
+        triggers: [
+          /\badopt(?:able)?s?\b/i,
+          /\bpicarto\.tv\b/i,
+          /\breminder+\b/i,
+          /\bstreaming\b/i,
+          /^REM$/,
+        ],
+        isAlwaysAd: true,
+      },
     },
     {
-      triggerExpressions: [
-        /\bauction\b/i,
-        /(?:^|\W)[cс]omm(?:ission)?s?\b/i, // The second "c" is a kyrillic "s"
-        /\bwing.its?\b/i,
-      ],
-      definitelyAdvertisementExpressions: [
-        /\bclosed\b/i,
-        /\bhalfbody\b/i,
-        /\bopen(?:ed)?\b/i,
-        /\bsale\b/i,
-        /\bslots?\b/i,
-      ],
-      definitelyNotAdvertisementExpressions: [/\bfor\b/i],
+      name: {
+        triggers: [
+          /\bauction\b/i,
+          /(?:^|\W)[cс]omm(?:ission)?s?\b/i, // The second "c" is a kyrillic "s"
+          /\bwing.its?\b/i,
+        ],
+        isAdExpressions: [
+          /\bclosed\b/i,
+          /\bhalfbody\b/i,
+          /\bopen(?:ed)?\b/i,
+          /\bsale\b/i,
+          /\bslots?\b/i,
+        ],
+        isNotAdExpressions: [/\bfor\b/i],
+      },
     },
     {
-      triggerExpressions: [/\b(?:live)?stream\b/i],
-      definitelyAdvertisementExpressions: [
-        /\blive\b/i,
-        /\boffline\b/i,
-        /\bonline\b/i,
-        /\bpreorders?\b/i,
-        /\bslots?\b/i,
-        /\bup\b/i,
-      ],
+      name: {
+        triggers: [/\b(?:live)?stream\b/i],
+        isAdExpressions: [
+          /\blive\b/i,
+          /\boffline\b/i,
+          /\bonline\b/i,
+          /\bpreorders?\b/i,
+          /\bslots?\b/i,
+          /\bup\b/i,
+        ],
+      },
     },
     {
-      triggerExpressions: [/y ?c ?h/i],
-      definitelyAdvertisementExpressions: [
-        /\bauction\b/i,
-        /\bclosed\b/i,
-        /\bdiscount\b/i,
-        /\bmultislot\b/i,
-        /\bo ?p ?e ?n\b/i,
-        /\bprice\b/i,
-        /\bpreview\b/i,
-        /\braffle\b/i,
-        /\brem(?:ind(?:er)?)?\d*\b/i,
-        /\brmd\b/i,
-        /\bsale\b/i,
-        /\bslots?\b/i,
-        /\bsold\b/i,
-      ],
-      definitelyNotAdvertisementExpressions: [
-        /\bby\b/i,
-        /\bcommission\b/i,
-        /\bfinished\b/i,
-        /\bfor\b/i,
-        /\bfrom\b/i,
-        /\bresult\b/i,
-      ],
+      name: {
+        triggers: [/y ?c ?h/i],
+        isAdExpressions: [
+          /\bauction\b/i,
+          /\bclosed\b/i,
+          /\bdiscount\b/i,
+          /\bmultislot\b/i,
+          /\bo ?p ?e ?n\b/i,
+          /\bprice\b/i,
+          /\bpreview\b/i,
+          /\braffle\b/i,
+          /\brem(?:ind(?:er)?)?\d*\b/i,
+          /\brmd\b/i,
+          /\bsale\b/i,
+          /\bslots?\b/i,
+          /\bsold\b/i,
+        ],
+        isNotAdExpressions: [
+          /\bby\b/i,
+          /\bcommission\b/i,
+          /\bfinished\b/i,
+          /\bfor\b/i,
+          /\bfrom\b/i,
+          /\bresult\b/i,
+        ],
+      },
     },
     {
-      triggerExpressions: [/\bdiscount\b/i, /\bsale\b/i],
-      definitelyAdvertisementExpressions: [
-        /\$/,
-        /\bbase\b/i,
-        /\bclaimed\b/i,
-        /\b(?:multi)?slot\b/i,
-        /\bprice\b/i,
-      ],
+      name: {
+        triggers: [/\bdiscount\b/i, /\bsale\b/i],
+        isAdExpressions: [
+          /\$/,
+          /\bbase\b/i,
+          /\bclaimed\b/i,
+          /\b(?:multi)?slot\b/i,
+          /\bprice\b/i,
+        ],
+      },
     },
     {
-      triggerExpressions: [/\bprice\b/i],
-      definitelyAdvertisementExpressions: [/\blist\b/i, /\bsheet\b/i],
+      name: {
+        triggers: [/\bprice\b/i],
+        isAdExpressions: [/\blist\b/i, /\bsheet\b/i],
+      },
     },
     {
-      triggerExpressions: [/\braffle\b/i],
-      definitelyAdvertisementExpressions: [/\bwinners?\b/i],
+      name: {
+        triggers: [/\braffle\b/i],
+        isAdExpressions: [/\bwinners?\b/i],
+      },
     },
     {
-      triggerExpressions: [
-        /\bboosty\b/i,
-        /\bpatreon\b/i,
-        /\bsub(?:scribe)?\s?star\b/i,
-      ],
-      definitelyAdvertisementExpressions: [/\bpreview\b/i, /\bteaser\b/i],
+      name: {
+        triggers: [/\bboosty\b/i, /\bpatreon\b/i, /\bsub(?:scribe)?\s?star\b/i],
+        isAdExpressions: [/\bpreview\b/i, /\bteaser\b/i],
+      },
     },
     {
-      triggerExpressions: [/\bshop\b/i],
-      definitelyAdvertisementExpressions: [/\bprint\b/i],
+      name: {
+        triggers: [/\bshop\b/i],
+        isAdExpressions: [/\bprint\b/i],
+      },
     },
     {
-      triggerExpressions: [/\b(?:multi)?slots?\b/i],
-      definitelyAdvertisementExpressions: [
-        /\bavailable\b/i,
-        /\bopen\b/i,
-        /\bsketch\b/i,
-      ],
+      name: {
+        triggers: [/\b(?:multi)?slots?\b/i],
+        isAdExpressions: [/\bavailable\b/i, /\bopen\b/i, /\bsketch\b/i],
+      },
     },
     {
-      triggerExpressions: [
-        /\bclosed\b/i,
-        /\bopen\b/i,
-        /\bpoll\b/i,
-        /\bpreview\b/i,
-        /\brem\b/i,
-        /\bsold\b/i,
-        /\bteaser\b/i,
-        /\bwip\b/i,
-      ],
+      name: {
+        triggers: [
+          /\bclosed\b/i,
+          /\bopen\b/i,
+          /\bpoll\b/i,
+          /\bpreview\b/i,
+          /\brem\b/i,
+          /\bsold\b/i,
+          /\bteaser\b/i,
+          /\bwip\b/i,
+        ],
+      },
     },
   ];
 
   /**
    * @param {string} text
-   * @param {AdvertisementCheckSpec} spec
+   * @param {AdvertisementCheckSpecPart} spec
    * @returns {AdvertisementLevel | null}
    */
   function checkAgainstAdvertisementSpec(text, spec) {
     /** @type {AdvertisementLevel | null} */
     let result = null;
 
-    for (const regex of spec.triggerExpressions) {
+    for (const regex of spec.triggers) {
       if (regex.test(text)) {
         result = "ambiguous";
         break;
@@ -280,9 +295,9 @@
     }
 
     if (result === "ambiguous") {
-      if (spec.definitelyAdvertisement) result = "advertisement";
-      else if (spec.definitelyAdvertisementExpressions) {
-        for (const regex of spec.definitelyAdvertisementExpressions) {
+      if (spec.isAlwaysAd) result = "advertisement";
+      else if (spec.isAdExpressions) {
+        for (const regex of spec.isAdExpressions) {
           if (regex.test(text)) {
             result = "advertisement";
             break;
@@ -291,8 +306,8 @@
       }
     }
 
-    if (result !== null && spec.definitelyNotAdvertisementExpressions) {
-      for (const regex of spec.definitelyNotAdvertisementExpressions) {
+    if (result !== null && spec.isNotAdExpressions) {
+      for (const regex of spec.isNotAdExpressions) {
         if (regex.test(text)) {
           result = "notAdvertisement";
           break;
@@ -316,11 +331,17 @@
     );
 
     for (const spec of advertisementCheckSpecs) {
-      result.nameResult = checkAgainstAdvertisementSpec(submissionName, spec);
+      result.nameResult = checkAgainstAdvertisementSpec(
+        submissionName,
+        spec.name,
+      );
       result.tagsResult =
         result.tagsResult === "notTagged"
           ? "notTagged"
-          : checkAgainstAdvertisementSpec(tags, spec);
+          : checkAgainstAdvertisementSpec(tags, {
+              ...spec.name,
+              ...spec.tags,
+            });
     }
 
     return result;
