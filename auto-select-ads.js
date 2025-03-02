@@ -22,7 +22,7 @@
 
   /**
    * @typedef {Object} AdvertisementCheckSpec
-   * @property {AdvertisementCheckSpecPart} name
+   * @property {AdvertisementCheckSpecPart} [name]
    * @property {boolean} [untaggedIsAd]
    * @property {AdvertisementCheckSpecPart} [tags]
    */
@@ -50,6 +50,9 @@
     #tagsResult = null;
 
     #isTagged = false;
+
+    /** @type {string[]} */
+    #decisionLog = [];
 
     /**
      * @returns {AdvertisementLevel | null}
@@ -114,21 +117,32 @@
       return this.#isTagged;
     }
 
+    get decisionLog() {
+      return this.#decisionLog;
+    }
+
+    /**
+     * @param {string} log
+     */
+    addToLog(log) {
+      this.#decisionLog.push(log);
+    }
+
     /**
      * @param {AdvertisementLevel | null} current
      * @param {AdvertisementLevel | null} newValue
      * @returns {AdvertisementLevel | null}
      */
     #coalesceResultLevel(current, newValue) {
-      if (current === "notAdvertisement") {
+      if (newValue === null) {
+        return current;
+      }
+
+      if (current === "notAdvertisement" || newValue === "notAdvertisement") {
         return "notAdvertisement";
       }
 
-      if (current === "advertisement" && newValue !== "ambiguous") {
-        return newValue;
-      }
-
-      if (current !== null && newValue === null) {
+      if (current === "advertisement" && newValue === "ambiguous") {
         return current;
       }
 
@@ -136,12 +150,17 @@
     }
   }
 
+  // The second "c" is a kyrillic "s";
+  const commissionRegexString = "[cс]omm(?:ission)?s?";
+  const commissionBoundedRegexString = `(?:^|\\W)${commissionRegexString}\\b`;
+  const commissionRegex = new RegExp(commissionBoundedRegexString, "i");
+
   /** @type {AdvertisementCheckSpec[]} */
   const advertisementCheckSpecs = [
     {
       name: {
         triggers: [
-          /\badopt(?:able)?s?\b/i,
+          /\badopt(?:(?:able)?s?|ing)\b/i,
           /\bpicarto\.tv\b/i,
           /\breminder+\b/i,
           /\bstreaming\b/i,
@@ -152,11 +171,17 @@
     },
     {
       name: {
-        triggers: [
-          /\bauction\b/i,
-          /(?:^|\W)[cс]omm(?:ission)?s?\b/i, // The second "c" is a kyrillic "s"
-          /\bwing.its?\b/i,
-        ],
+        triggers: [/\bwip\b/i],
+        isAlwaysAd: true,
+      },
+      tags: {
+        triggers: [/\bwip\b/i],
+        isAlwaysAd: true,
+      },
+    },
+    {
+      name: {
+        triggers: [/\bauction\b/i, commissionRegex, /\bwing.its?\b/i],
         isAdExpressions: [
           /\bclosed\b/i,
           /\bhalfbody\b/i,
@@ -164,7 +189,11 @@
           /\bsale\b/i,
           /\bslots?\b/i,
         ],
-        isNotAdExpressions: [/\bfor\b/i],
+        isNotAdExpressions: [
+          /\bfor\b/i,
+          new RegExp(`\\[${commissionRegexString}\\]`, "i"),
+          new RegExp(`^${commissionRegexString}$`, "i"),
+        ],
       },
     },
     {
@@ -182,9 +211,20 @@
     },
     {
       name: {
-        triggers: [/y ?c ?h/i],
+        triggers: [/\bstream\b/i],
+        isAlwaysAd: true,
+      },
+      tags: {
+        triggers: [/\bstream\b/i],
+        isAlwaysAd: true,
+      },
+    },
+    {
+      name: {
+        triggers: [/\by ?c ?h\b/i],
         isAdExpressions: [
           /\bauction\b/i,
+          /\bavailable\b/i,
           /\bclosed\b/i,
           /\bdiscount\b/i,
           /\bmultislot\b/i,
@@ -197,10 +237,13 @@
           /\bsale\b/i,
           /\bslots?\b/i,
           /\bsold\b/i,
+          /\btaken\b/i,
+          /\busd\b/i,
+          /\b\$\d+\b/i,
         ],
         isNotAdExpressions: [
           /\bby\b/i,
-          /\bcommission\b/i,
+          commissionRegex,
           /\bfinished\b/i,
           /\bfor\b/i,
           /\bfrom\b/i,
@@ -211,12 +254,22 @@
     },
     {
       name: {
+        triggers: [/\by ?c ?h\b/i],
+      },
+      tags: {
+        triggers: [/\bauction\b/i, /\bych\b/i],
+        isAlwaysAd: true,
+      },
+    },
+    {
+      name: {
         triggers: [/\bdiscount\b/i, /\bsale\b/i],
         isAdExpressions: [
           /\$/,
           /\bbase\b/i,
           /\bclaimed\b/i,
           /\b(?:multi)?slot\b/i,
+          /\boffer\b/i,
           /\bprice\b/i,
         ],
       },
@@ -235,8 +288,18 @@
     },
     {
       name: {
-        triggers: [/\bboosty\b/i, /\bpatreon\b/i, /\bsub(?:scribe)?\s?star\b/i],
-        isAdExpressions: [/\bpreview\b/i, /\bteaser\b/i],
+        triggers: [
+          /\bboosty\b/i,
+          /\bp[@a]treon\b/i,
+          /\bsub(?:scribe)?\s?star\b/i,
+        ],
+        isAdExpressions: [
+          /\bdiscount\b/i,
+          /\bnow on\b/i,
+          /\bposted to\b/i,
+          /\bpreview\b/i,
+          /\bteaser?\b/i,
+        ],
       },
     },
     {
@@ -264,47 +327,62 @@
           /\bwip\b/i,
         ],
       },
+      tags: {
+        triggers: [/\bteaser\b/i],
+      },
     },
   ];
 
   /**
+   * @param {AdvertisementCheckResult} result
    * @param {string} text
    * @param {AdvertisementCheckSpecPart} spec
    * @returns {AdvertisementLevel | null}
    */
-  function checkAgainstAdvertisementSpec(text, spec) {
+  function checkAgainstAdvertisementSpec(result, text, spec) {
     /** @type {AdvertisementLevel | null} */
-    let result = null;
+    let level = null;
+
+    let log = "";
 
     for (const regex of spec.triggers) {
       if (regex.test(text)) {
-        result = "ambiguous";
+        log += "Trigger: " + regex;
+        level = "ambiguous";
         break;
       }
     }
 
-    if (result === "ambiguous") {
-      if (spec.isAlwaysAd) result = "advertisement";
-      else if (spec.isAdExpressions) {
+    if (level === "ambiguous") {
+      if (spec.isAlwaysAd) {
+        log += "\nIs always an ad.";
+        level = "advertisement";
+      } else if (spec.isAdExpressions) {
         for (const regex of spec.isAdExpressions) {
           if (regex.test(text)) {
-            result = "advertisement";
+            log += "\nAdExpression: " + regex;
+            level = "advertisement";
             break;
           }
         }
       }
     }
 
-    if (result !== null && spec.isNotAdExpressions) {
+    if (level !== null && spec.isNotAdExpressions) {
       for (const regex of spec.isNotAdExpressions) {
         if (regex.test(text)) {
-          result = "notAdvertisement";
+          log += "\nIsNotAdExpression: " + regex;
+          level = "notAdvertisement";
           break;
         }
       }
     }
 
-    return result;
+    if (log) {
+      result.addToLog(log);
+    }
+
+    return level;
   }
 
   /**
@@ -319,26 +397,33 @@
     const result = new AdvertisementCheckResult(!isUntagged);
 
     for (const spec of advertisementCheckSpecs) {
-      const nameResult = checkAgainstAdvertisementSpec(
-        submissionName,
-        spec.name,
-      );
-      result.nameResult = nameResult;
+      const nameResult = checkAgainstAdvertisementSpec(result, submissionName, {
+        triggers: [],
+        ...spec.name,
+      });
 
-      if (
-        ["advertisement", "ambiguous"].includes(nameResult) &&
-        isUntagged &&
-        spec.untaggedIsAd
-      ) {
-        result.tagsResult = "advertisement";
-      }
-
-      if (!isUntagged) {
-        result.tagsResult = checkAgainstAdvertisementSpec(tags, {
-          ...spec.name,
+      /** @type {AdvertisementLevel} */
+      let tagsResult = null;
+      if (isUntagged) {
+        if (
+          ["advertisement", "ambiguous"].includes(nameResult) &&
+          spec.untaggedIsAd
+        ) {
+          tagsResult = "advertisement";
+        }
+      } else {
+        tagsResult = checkAgainstAdvertisementSpec(result, tags, {
+          triggers: [],
           ...spec.tags,
         });
       }
+
+      if (spec.name && spec.tags && (!nameResult || !tagsResult)) {
+        continue;
+      }
+
+      result.nameResult = nameResult;
+      result.tagsResult = tagsResult;
     }
 
     return result;
@@ -357,16 +442,26 @@
 
     for (const figure of figures) {
       const figcaption = figure.querySelector("figcaption");
+      const checkbox = figure.querySelector("input");
       const nameAnchor = figcaption.querySelector("a");
       const submissionName = nameAnchor.textContent;
       const tags = figure.querySelector("img").dataset.tags;
 
       const result = checkAgainstAdvertisementSpecs(submissionName, tags);
+      const decisionLog = result.decisionLog;
+
+      if (decisionLog.length) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Log";
+        button.addEventListener("click", () => console.log(result.decisionLog));
+        checkbox.parentElement.appendChild(button);
+      }
 
       switch (result.result) {
         case "advertisement":
           figure.classList.add("advertisement");
-          figure.querySelector("input").checked = true;
+          checkbox.checked = true;
           advertisements += 1;
           break;
 
@@ -391,6 +486,7 @@
 figure.advertisement { outline: orange 3px solid; }
 figure.maybe-advertisement { outline: yellow 3px solid; }
 figcaption.not-tagged input { outline: orange 3px solid; }
+figcaption button { line-height: 1; margin-left: 1rem; padding: 0; }
 `.trim(),
   );
   document.adoptedStyleSheets.push(sheet);
