@@ -56,6 +56,7 @@
         /\bclosed\b/i,
         /\bmultislot\b/i,
         /\bopen\b/i,
+        /\bslots?\b/i,
         /\bremind(?:er)?\b/i,
         /\brmd\b/i,
       ],
