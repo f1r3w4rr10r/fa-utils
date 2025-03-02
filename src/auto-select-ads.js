@@ -161,7 +161,7 @@
       },
     },
     {
-      specName: "memberships",
+      specName: "memberships in names",
       name: {
         triggers: [
           /\bboosty\b/i,
@@ -175,6 +175,18 @@
           /\bpreview\b/i,
           /\bteaser?\b/i,
         ],
+      },
+    },
+    {
+      specName: "memberships teasers in name and description",
+      name: {
+        triggers: [/\bpreview\b/i, /\bteaser\b/i],
+      },
+      description: {
+        triggers: [
+          /\b(?:available|n[eo]w|out)\b.*\bon\b.*\b(?:boosty|p[@a]treon|sub(?:scribe)?\s?star)\b/i,
+        ],
+        isAlwaysAd: true,
       },
     },
     {
@@ -473,6 +485,8 @@
           ...spec.tags,
         });
       }
+
+      // TODO: Maybe change the accumulation to an overall weighting algorithm.
 
       // Parts present in the same spec are interpreted as being "AND"
       // connected.
