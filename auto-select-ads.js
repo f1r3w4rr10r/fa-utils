@@ -22,6 +22,7 @@
 
   /**
    * @typedef {Object} AdvertisementCheckSpec
+   * @property {string} specName
    * @property {AdvertisementCheckSpecPart} [name]
    * @property {boolean} [untaggedIsAd]
    * @property {AdvertisementCheckSpecPart} [tags]
@@ -29,6 +30,23 @@
 
   /**
    * @typedef {"advertisement" | "ambiguous" | "notAdvertisement"} AdvertisementLevel
+   */
+
+  /**
+   * @typedef {Object} DecisionLogEntryPart
+   * @property {RegExp} trigger
+   * @property {AdvertisementLevel} level
+   * @property {boolean} [isAlwaysAd]
+   * @property {RegExp} [isAdExpression]
+   * @property {RegExp} [isNotAdExpression]
+   */
+
+  /**
+   * @typedef {Object} DecisionLogEntry
+   * @property {string} specName
+   * @property {AdvertisementLevel} level
+   * @property {DecisionLogEntryPart | null} name
+   * @property {DecisionLogEntryPart | null} tags
    */
 
   class AdvertisementCheckResult {
@@ -51,7 +69,7 @@
 
     #isTagged = false;
 
-    /** @type {string[]} */
+    /** @type {DecisionLogEntry[]} */
     #decisionLog = [];
 
     /**
@@ -122,7 +140,7 @@
     }
 
     /**
-     * @param {string} log
+     * @param {DecisionLogEntry} log
      */
     addToLog(log) {
       this.#decisionLog.push(log);
@@ -158,6 +176,7 @@
   /** @type {AdvertisementCheckSpec[]} */
   const advertisementCheckSpecs = [
     {
+      specName: "obvious ads",
       name: {
         triggers: [
           /\badopt(?:(?:able)?s?|ing)\b/i,
@@ -170,6 +189,7 @@
       },
     },
     {
+      specName: "WIPs",
       name: {
         triggers: [/\bwip\b/i],
         isAlwaysAd: true,
@@ -180,6 +200,7 @@
       },
     },
     {
+      specName: "commission ads",
       name: {
         triggers: [/\bauction\b/i, commissionRegex, /\bwing.its?\b/i],
         isAdExpressions: [
@@ -197,6 +218,7 @@
       },
     },
     {
+      specName: "streams by name",
       name: {
         triggers: [/\b(?:live)?stream\b/i],
         isAdExpressions: [
@@ -210,6 +232,7 @@
       },
     },
     {
+      specName: "streams",
       name: {
         triggers: [/\bstream\b/i],
         isAlwaysAd: true,
@@ -220,12 +243,12 @@
       },
     },
     {
+      specName: "YCHs by name",
       name: {
         triggers: [/\by ?c ?h\b/i],
         isAdExpressions: [
           /\bauction\b/i,
           /\bavailable\b/i,
-          /\bclosed\b/i,
           /\bdiscount\b/i,
           /\bmultislot\b/i,
           /\bo ?p ?e ?n\b/i,
@@ -253,6 +276,7 @@
       untaggedIsAd: true,
     },
     {
+      specName: "YCHs by name and tag",
       name: {
         triggers: [/\by ?c ?h\b/i],
       },
@@ -262,6 +286,7 @@
       },
     },
     {
+      specName: "discounts",
       name: {
         triggers: [/\bdiscount\b/i, /\bsale\b/i],
         isAdExpressions: [
@@ -275,18 +300,21 @@
       },
     },
     {
+      specName: "price lists",
       name: {
         triggers: [/\bprice\b/i],
         isAdExpressions: [/\blist\b/i, /\bsheet\b/i],
       },
     },
     {
+      specName: "raffles",
       name: {
         triggers: [/\braffle\b/i],
         isAdExpressions: [/\bwinners?\b/i],
       },
     },
     {
+      specName: "memberships",
       name: {
         triggers: [
           /\bboosty\b/i,
@@ -303,18 +331,21 @@
       },
     },
     {
+      specName: "shops",
       name: {
         triggers: [/\bshop\b/i],
         isAdExpressions: [/\bprint\b/i],
       },
     },
     {
+      specName: "multislots",
       name: {
         triggers: [/\b(?:multi)?slots?\b/i],
         isAdExpressions: [/\bavailable\b/i, /\bopen\b/i, /\bsketch\b/i],
       },
     },
     {
+      specName: "remaining name",
       name: {
         triggers: [
           /\bclosed\b/i,
@@ -327,6 +358,9 @@
           /\bwip\b/i,
         ],
       },
+    },
+    {
+      specName: "remaining tags",
       tags: {
         triggers: [/\bteaser\b/i],
       },
@@ -334,34 +368,40 @@
   ];
 
   /**
-   * @param {AdvertisementCheckResult} result
    * @param {string} text
    * @param {AdvertisementCheckSpecPart} spec
-   * @returns {AdvertisementLevel | null}
+   * @returns {[AdvertisementLevel | null, DecisionLogEntryPart | null]}
    */
-  function checkAgainstAdvertisementSpec(result, text, spec) {
+  function checkAgainstAdvertisementSpec(text, spec) {
     /** @type {AdvertisementLevel | null} */
     let level = null;
 
-    let log = "";
+    /** @type {DecisionLogEntryPart | null} */
+    let log = null;
 
     for (const regex of spec.triggers) {
       if (regex.test(text)) {
-        log += "Trigger: " + regex;
         level = "ambiguous";
+        log = { trigger: regex, level };
         break;
       }
     }
 
     if (level === "ambiguous") {
       if (spec.isAlwaysAd) {
-        log += "\nIs always an ad.";
         level = "advertisement";
+        if (log) {
+          log.isAlwaysAd = true;
+          log.level = level;
+        }
       } else if (spec.isAdExpressions) {
         for (const regex of spec.isAdExpressions) {
           if (regex.test(text)) {
-            log += "\nAdExpression: " + regex;
             level = "advertisement";
+            if (log) {
+              log.isAdExpression = regex;
+              log.level = level;
+            }
             break;
           }
         }
@@ -371,18 +411,17 @@
     if (level !== null && spec.isNotAdExpressions) {
       for (const regex of spec.isNotAdExpressions) {
         if (regex.test(text)) {
-          log += "\nIsNotAdExpression: " + regex;
           level = "notAdvertisement";
+          if (log) {
+            log.isNotAdExpression = regex;
+            log.level = level;
+          }
           break;
         }
       }
     }
 
-    if (log) {
-      result.addToLog(log);
-    }
-
-    return level;
+    return [level, log];
   }
 
   /**
@@ -397,13 +436,20 @@
     const result = new AdvertisementCheckResult(!isUntagged);
 
     for (const spec of advertisementCheckSpecs) {
-      const nameResult = checkAgainstAdvertisementSpec(result, submissionName, {
-        triggers: [],
-        ...spec.name,
-      });
+      const [nameResult, nameLog] = checkAgainstAdvertisementSpec(
+        submissionName,
+        {
+          triggers: [],
+          ...spec.name,
+        },
+      );
 
-      /** @type {AdvertisementLevel} */
+      /** @type {AdvertisementLevel | null} */
       let tagsResult = null;
+
+      /** @type {DecisionLogEntryPart | null} */
+      let tagsLog = null;
+
       if (isUntagged) {
         if (
           ["advertisement", "ambiguous"].includes(nameResult) &&
@@ -412,7 +458,7 @@
           tagsResult = "advertisement";
         }
       } else {
-        tagsResult = checkAgainstAdvertisementSpec(result, tags, {
+        [tagsResult, tagsLog] = checkAgainstAdvertisementSpec(tags, {
           triggers: [],
           ...spec.tags,
         });
@@ -424,6 +470,15 @@
 
       result.nameResult = nameResult;
       result.tagsResult = tagsResult;
+
+      if (nameLog !== null || tagsLog !== null) {
+        result.addToLog({
+          specName: spec.specName,
+          level: result.result,
+          name: nameLog,
+          tags: tagsLog,
+        });
+      }
     }
 
     return result;
