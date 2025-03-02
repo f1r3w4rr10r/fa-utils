@@ -16,6 +16,8 @@
   const commissionRegexString = "[cс]omm(?:ission)?s?";
   const commissionBoundedRegexString = `(?:^|\\W)${commissionRegexString}\\b`;
   const commissionRegex = new RegExp(commissionBoundedRegexString, "i");
+  const userRefRegex =
+    /(?:by|for|from)\s*(?::(?:icon\w+|\w+icon):|@@\w+)|YCH\s+for\s+\w+/i;
 
   /** @type {AdvertisementCheckSpec[]} */
   const advertisementCheckSpecs = [
@@ -59,6 +61,10 @@
           new RegExp(`\\[${commissionRegexString}\\]`, "i"),
           new RegExp(`^${commissionRegexString}$`, "i"),
         ],
+      },
+      description: {
+        triggers: [/.*/i],
+        isNotAdExpressions: [userRefRegex],
       },
     },
     {
@@ -108,14 +114,11 @@
           /\busd\b/i,
           /\b\$\d+\b/i,
         ],
-        isNotAdExpressions: [
-          /\bby\b/i,
-          commissionRegex,
-          /\bfinished\b/i,
-          /\bfor\b/i,
-          /\bfrom\b/i,
-          /\bresult\b/i,
-        ],
+        isNotAdExpressions: [commissionRegex, /\bfinished\b/i, /\bresult\b/i],
+      },
+      description: {
+        triggers: [/.*/i],
+        isNotAdExpressions: [userRefRegex],
       },
       untaggedIsAd: true,
     },
@@ -458,6 +461,11 @@
           spec.untaggedIsAd
         ) {
           tagsResult = "advertisement";
+          tagsLog = {
+            level: "advertisement",
+            trigger: /^$/,
+            isAlwaysAd: true,
+          };
         }
       } else {
         [tagsResult, tagsLog] = checkAgainstAdvertisementSpec(tags, {
