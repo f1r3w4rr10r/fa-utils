@@ -22,12 +22,12 @@
     const result = await fetch(url);
     if (!result.ok) {
       throw new Error(
-        `Could not get watchlist: ${result.status} ${result.statusText} ${url}`
+        `Could not get watchlist: ${result.status} ${result.statusText} ${url}`,
       );
     }
     const doc = new DOMParser().parseFromString(
       await result.text(),
-      "text/html"
+      "text/html",
     );
 
     const userLinks = Array.from(doc.querySelectorAll("a")).map((a) => a.href);
