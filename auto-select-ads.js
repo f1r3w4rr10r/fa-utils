@@ -33,7 +33,7 @@
   const advertisementCheckSpecs = [
     {
       triggerExpressions: [
-        /\badopt(?:able)?\b/i,
+        /\badopt(?:able)?s?\b/i,
         /\bpicarto\.tv\b/i,
         /\breminder\b/i,
         /\bstreaming\b/i,
@@ -41,7 +41,11 @@
       definitelyAdvertisement: true,
     },
     {
-      triggerExpressions: [/\bauction\b/i, /\bcomm(?:ission)?s?\b/i],
+      triggerExpressions: [
+        /\bauction\b/i,
+        /\bcomm(?:ission)?s?\b/i,
+        /\bwing.its?\b/i,
+      ],
       definitelyAdvertisementExpressions: [
         /\bclosed\b/i,
         /\bhalfbody\b/i,
@@ -58,6 +62,7 @@
         /\boffline\b/i,
         /\bonline\b/i,
         /\bslots?\b/i,
+        /\bup\b/i,
       ],
     },
     {
@@ -94,7 +99,7 @@
     },
     {
       triggerExpressions: [/\bprice\b/i],
-      definitelyAdvertisementExpressions: [/\bsheet\b/i],
+      definitelyAdvertisementExpressions: [/\blist\b/i, /\bsheet\b/i],
     },
     {
       triggerExpressions: [/\braffle\b/i],
@@ -115,6 +120,8 @@
         /\bpreview\b/i,
         /\brem\b/i,
         /\b(?:multi)?slot\b/i,
+        /\bteaser\b/i,
+        /\bwip\b/i,
       ],
     },
   ];
