@@ -23,6 +23,7 @@
   /**
    * @typedef {Object} AdvertisementCheckSpec
    * @property {AdvertisementCheckSpecPart} name
+   * @property {boolean} [untaggedIsAd]
    * @property {AdvertisementCheckSpecPart} [tags]
    */
 
@@ -30,25 +31,25 @@
    * @typedef {"advertisement" | "ambiguous" | "notAdvertisement"} AdvertisementLevel
    */
 
-  /**
-   * @typedef {AdvertisementLevel | "notTagged"} TagAdvertisementLevel
-   */
-
   class AdvertisementCheckResult {
     /**
-     * @param {AdvertisementLevel | null} nameResult
-     * @param {TagAdvertisementLevel | null} tagsResult
+     * @param {boolean} isTagged
+     * @param {AdvertisementLevel | null} [nameResult]
+     * @param {AdvertisementLevel | null} [tagsResult]
      */
-    constructor(nameResult, tagsResult) {
-      this.#nameResult = nameResult;
-      this.#tagsResult = tagsResult;
+    constructor(isTagged, nameResult, tagsResult) {
+      this.#isTagged = isTagged;
+      this.#nameResult = nameResult ?? null;
+      this.#tagsResult = tagsResult ?? null;
     }
 
     /** @type {AdvertisementLevel | null} */
     #nameResult = null;
 
-    /** @type {TagAdvertisementLevel | null} */
+    /** @type {AdvertisementLevel | null} */
     #tagsResult = null;
+
+    #isTagged = false;
 
     /**
      * @returns {AdvertisementLevel | null}
@@ -61,21 +62,21 @@
      * @param {AdvertisementLevel | null} value
      */
     set nameResult(value) {
-      this.#nameResult = this.#coalesceNameResultLevel(this.#nameResult, value);
+      this.#nameResult = this.#coalesceResultLevel(this.#nameResult, value);
     }
 
     /**
-     * @returns {TagAdvertisementLevel | null}
+     * @returns {AdvertisementLevel | null}
      */
     get tagsResult() {
       return this.#tagsResult;
     }
 
     /**
-     * @param {TagAdvertisementLevel | null} value
+     * @param {AdvertisementLevel | null} value
      */
     set tagsResult(value) {
-      this.#tagsResult = this.#coalesceTagsResultLevel(this.#tagsResult, value);
+      this.#tagsResult = this.#coalesceResultLevel(this.#tagsResult, value);
     }
 
     /**
@@ -107,10 +108,10 @@
     }
 
     /**
-     * @returns {"notTagged" | null}
+     * @returns {boolean}
      */
-    get tagStatus() {
-      return this.#tagsResult === "notTagged" ? "notTagged" : null;
+    get isTagged() {
+      return this.#isTagged;
     }
 
     /**
@@ -118,7 +119,7 @@
      * @param {AdvertisementLevel | null} newValue
      * @returns {AdvertisementLevel | null}
      */
-    #coalesceNameResultLevel(current, newValue) {
+    #coalesceResultLevel(current, newValue) {
       if (current === "notAdvertisement") {
         return "notAdvertisement";
       }
@@ -132,19 +133,6 @@
       }
 
       return newValue;
-    }
-
-    /**
-     * @param {TagAdvertisementLevel | null} current
-     * @param {TagAdvertisementLevel | null} newValue
-     * @returns {TagAdvertisementLevel | null}
-     */
-    #coalesceTagsResultLevel(current, newValue) {
-      if (current === "notTagged" || newValue === "notTagged") {
-        return current;
-      }
-
-      return this.#coalesceNameResultLevel(current, newValue);
     }
   }
 
@@ -219,6 +207,7 @@
           /\bresult\b/i,
         ],
       },
+      untaggedIsAd: true,
     },
     {
       name: {
@@ -324,31 +313,39 @@
    * @returns {AdvertisementCheckResult}
    */
   function checkAgainstAdvertisementSpecs(submissionName, tags) {
+    const isUntagged = tags === "";
+
     /** @type {AdvertisementCheckResult} */
-    const result = new AdvertisementCheckResult(
-      null,
-      tags === "" ? "notTagged" : null,
-    );
+    const result = new AdvertisementCheckResult(!isUntagged);
 
     for (const spec of advertisementCheckSpecs) {
-      result.nameResult = checkAgainstAdvertisementSpec(
+      const nameResult = checkAgainstAdvertisementSpec(
         submissionName,
         spec.name,
       );
-      result.tagsResult =
-        result.tagsResult === "notTagged"
-          ? "notTagged"
-          : checkAgainstAdvertisementSpec(tags, {
-              ...spec.name,
-              ...spec.tags,
-            });
+      result.nameResult = nameResult;
+
+      if (
+        ["advertisement", "ambiguous"].includes(nameResult) &&
+        isUntagged &&
+        spec.untaggedIsAd
+      ) {
+        result.tagsResult = "advertisement";
+      }
+
+      if (!isUntagged) {
+        result.tagsResult = checkAgainstAdvertisementSpec(tags, {
+          ...spec.name,
+          ...spec.tags,
+        });
+      }
     }
 
     return result;
   }
 
   /**
-   * @returns {[number, number]}
+   * @returns {[number, number, number]}
    */
   function iterateLabels() {
     const figures = Array.from(
@@ -356,6 +353,7 @@
     );
     let advertisements = 0;
     let ambiguous = 0;
+    let untagged = 0;
 
     for (const figure of figures) {
       const figcaption = figure.querySelector("figcaption");
@@ -378,12 +376,13 @@
           break;
       }
 
-      if (result.tagStatus === "notTagged") {
+      if (!result.isTagged) {
         figcaption.classList.add("not-tagged");
+        untagged += 1;
       }
     }
 
-    return [advertisements, ambiguous];
+    return [advertisements, ambiguous, untagged];
   }
 
   const sheet = new CSSStyleSheet();
@@ -403,9 +402,9 @@ figcaption.not-tagged input { outline: orange 3px solid; }
     "Checking for advertisement submissions…";
   sectionHeader.appendChild(advertisementsSelectMessage);
 
-  const [advertisements, ambiguous] = iterateLabels();
+  const [advertisements, ambiguous, untagged] = iterateLabels();
 
-  const message = `Selected ${advertisements} advertisement and ${ambiguous} ambiguous submissions.`;
+  const message = `Selected ${advertisements} advertisement and ${ambiguous} ambiguous submissions. ${untagged} submissions were not tagged.`;
 
   advertisementsSelectMessage.textContent = message;
 })();
