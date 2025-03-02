@@ -35,7 +35,7 @@
       triggerExpressions: [
         /\badopt(?:able)?s?\b/i,
         /\bpicarto\.tv\b/i,
-        /\breminder\b/i,
+        /\breminder+\b/i,
         /\bstreaming\b/i,
       ],
       definitelyAdvertisement: true,
@@ -82,6 +82,7 @@
         /\bsold\b/i,
       ],
       definitelyNotAdvertisementExpressions: [
+        /\bby\b/i,
         /\bcommission\b/i,
         /\bfinished\b/i,
         /\bfor\b/i,
@@ -109,7 +110,7 @@
     },
     {
       triggerExpressions: [/\bpatreon\b/i],
-      definitelyAdvertisementExpressions: [/\bpreview\b/i],
+      definitelyAdvertisementExpressions: [/\bpreview\b/i, /\bteaser\b/i],
     },
     {
       triggerExpressions: [/\bshop\b/i],
