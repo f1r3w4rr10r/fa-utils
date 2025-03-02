@@ -14,13 +14,13 @@
 
   /**
    * @typedef {Object} AdvertisementCheckSpec
-   * @property {string[]} triggerKeywords - any of these trigger a closer look
+   * @property {RegExp[]} triggerExpressions - any of these trigger a closer look
    * @property {boolean} [definitelyAdvertisement]
    *     - a submission with any trigger keyword is definitely an advertisement
-   * @property {string[]} [definitelyAdvertisementKeywords]
+   * @property {RegExp[]} [definitelyAdvertisementExpressions]
    *     - a submission with any trigger keyword and any of these keywords is an
    *     advertisement
-   * @property {string[]} [definitelyNotAdvertisementKeywords]
+   * @property {RegExp[]} [definitelyNotAdvertisementExpressions]
    *     - an already checked submission with any of these keywords is
    *     definitely not an advertisement. This overrides everything else.
    */
@@ -32,42 +32,47 @@
   /** @type {AdvertisementCheckSpec[]} */
   const advertisementCheckSpecs = [
     {
-      triggerKeywords: ["adopt", "picarto.tv", "reminder", "streaming"],
+      triggerExpressions: [
+        /\badopt(?:able)?\b/i,
+        /\bpicarto\.tv\b/i,
+        /\breminder\b/i,
+        /\bstreaming\b/i,
+      ],
       definitelyAdvertisement: true,
     },
     {
-      triggerKeywords: ["commission", "comm"],
-      definitelyAdvertisementKeywords: ["open", "closed"],
-      definitelyNotAdvertisementKeywords: ["for"],
+      triggerExpressions: [/\bcomm(?:ission)?\b/i],
+      definitelyAdvertisementExpressions: [/\bopen\b/i, /\bclosed\b/i],
+      definitelyNotAdvertisementExpressions: [/\bfor\b/i],
     },
     {
-      triggerKeywords: ["stream"],
-      definitelyAdvertisementKeywords: ["live", "online"],
+      triggerExpressions: [/\bstream\b/i],
+      definitelyAdvertisementExpressions: [/\blive\b/i, /\bonline\b/i],
     },
     {
-      triggerKeywords: ["ych"],
-      definitelyAdvertisementKeywords: [
-        "auction",
-        "closed",
-        "multislot",
-        "open",
-        "remind",
-        "rmd",
+      triggerExpressions: [/\bych\b/i],
+      definitelyAdvertisementExpressions: [
+        /\bauction\b/i,
+        /\bclosed\b/i,
+        /\bmultislot\b/i,
+        /\bopen\b/i,
+        /\bremind(?:er)?\b/i,
+        /\brmd\b/i,
       ],
-      definitelyNotAdvertisementKeywords: [
-        "commission",
-        "finished",
-        "for",
-        "from",
-        "result",
+      definitelyNotAdvertisementExpressions: [
+        /\bcommission\b/i,
+        /\bfinished\b/i,
+        /\bfor\b/i,
+        /\bfrom\b/i,
+        /\bresult\b/i,
       ],
     },
     {
-      triggerKeywords: ["sale"],
-      definitelyAdvertisementKeywords: ["$", "price"],
+      triggerExpressions: [/\bsale\b/i],
+      definitelyAdvertisementExpressions: [/\$/, /\bprice\b/i],
     },
     {
-      triggerKeywords: ["open", "raffle", "rem"],
+      triggerExpressions: [/\bopen\b/i, /\braffle\b/i, /\brem\b/i],
     },
   ];
 
@@ -80,8 +85,8 @@
     /** @type {AdvertisementCheckResult | null} */
     let result = null;
 
-    for (const keyword of spec.triggerKeywords) {
-      if (name.includes(keyword)) {
+    for (const regex of spec.triggerExpressions) {
+      if (regex.test(name)) {
         result = "ambiguous";
         break;
       }
@@ -89,9 +94,9 @@
 
     if (result === "ambiguous") {
       if (spec.definitelyAdvertisement) result = "advertisement";
-      else if (spec.definitelyAdvertisementKeywords) {
-        for (const keyword of spec.definitelyAdvertisementKeywords) {
-          if (name.includes(keyword)) {
+      else if (spec.definitelyAdvertisementExpressions) {
+        for (const regex of spec.definitelyAdvertisementExpressions) {
+          if (regex.test(name)) {
             result = "advertisement";
             break;
           }
@@ -99,9 +104,9 @@
       }
     }
 
-    if (result !== null && spec.definitelyNotAdvertisementKeywords) {
-      for (const keyword of spec.definitelyNotAdvertisementKeywords) {
-        if (name.includes(keyword)) {
+    if (result !== null && spec.definitelyNotAdvertisementExpressions) {
+      for (const regex of spec.definitelyNotAdvertisementExpressions) {
+        if (regex.test(name)) {
           result = "notAdvertisement";
           break;
         }
@@ -116,11 +121,10 @@
    * @returns {AdvertisementCheckResult}
    */
   function checkAgainstAdvertisementSpecs(submissionName) {
-    const name = submissionName.toLowerCase();
     let atLeastOneAmbiguous = false;
 
     for (const spec of advertisementCheckSpecs) {
-      const result = checkAgainstAdvertisementSpec(name, spec);
+      const result = checkAgainstAdvertisementSpec(submissionName, spec);
       if (result === null) continue;
 
       if (result !== "ambiguous") return result;
