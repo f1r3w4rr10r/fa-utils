@@ -37,13 +37,14 @@
         /\bpicarto\.tv\b/i,
         /\breminder+\b/i,
         /\bstreaming\b/i,
+        /^REM$/,
       ],
       definitelyAdvertisement: true,
     },
     {
       triggerExpressions: [
         /\bauction\b/i,
-        /\bcomm(?:ission)?s?\b/i,
+        /(?:^|\W)[cс]omm(?:ission)?s?\b/i, // The second "c" is a kyrillic "s"
         /\bwing.its?\b/i,
       ],
       definitelyAdvertisementExpressions: [
@@ -56,7 +57,7 @@
       definitelyNotAdvertisementExpressions: [/\bfor\b/i],
     },
     {
-      triggerExpressions: [/\bstream\b/i],
+      triggerExpressions: [/\b(?:live)?stream\b/i],
       definitelyAdvertisementExpressions: [
         /\blive\b/i,
         /\boffline\b/i,
