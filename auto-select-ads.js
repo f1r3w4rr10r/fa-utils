@@ -35,7 +35,7 @@
       definitelyAdvertisement: true,
     },
     {
-      mustHaveKeywords: ["streaming"],
+      mustHaveKeywords: ["streaming", "picarto.tv"],
       definitelyAdvertisement: true,
     },
     {
