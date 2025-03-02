@@ -41,13 +41,23 @@
       definitelyAdvertisement: true,
     },
     {
-      triggerExpressions: [/\bcomm(?:ission)?\b/i],
-      definitelyAdvertisementExpressions: [/\bopen\b/i, /\bclosed\b/i],
+      triggerExpressions: [/\bcomm(?:ission)?s?\b/i, /\bsketch\b/i],
+      definitelyAdvertisementExpressions: [
+        /\bclosed\b/i,
+        /\bhalfbody\b/i,
+        /\bopen\b/i,
+        /\bsale\b/i,
+        /\bslots?\b/i,
+      ],
       definitelyNotAdvertisementExpressions: [/\bfor\b/i],
     },
     {
       triggerExpressions: [/\bstream\b/i],
-      definitelyAdvertisementExpressions: [/\blive\b/i, /\bonline\b/i],
+      definitelyAdvertisementExpressions: [
+        /\blive\b/i,
+        /\bonline\b/i,
+        /\bslots?\b/i,
+      ],
     },
     {
       triggerExpressions: [/\bych\b/i],
@@ -56,8 +66,9 @@
         /\bclosed\b/i,
         /\bmultislot\b/i,
         /\bopen\b/i,
+        /\bprice\b/i,
         /\bslots?\b/i,
-        /\bremind(?:er)?\b/i,
+        /\brem(?:ind(?:er)?)?\b/i,
         /\brmd\b/i,
       ],
       definitelyNotAdvertisementExpressions: [
@@ -70,10 +81,27 @@
     },
     {
       triggerExpressions: [/\bsale\b/i],
-      definitelyAdvertisementExpressions: [/\$/, /\bprice\b/i],
+      definitelyAdvertisementExpressions: [/\$/, /\bbase\b/i, /\bprice\b/i],
     },
     {
-      triggerExpressions: [/\bopen\b/i, /\braffle\b/i, /\brem\b/i],
+      triggerExpressions: [/\bprice\b/i],
+      definitelyAdvertisementExpressions: [/\bsheet\b/i],
+    },
+    {
+      triggerExpressions: [/\braffle\b/i],
+      definitelyAdvertisementExpressions: [/\bwinners?\b/i],
+    },
+    {
+      triggerExpressions: [/\bpatreon\b/i],
+      definitelyAdvertisementExpressions: [/\bpreview\b/i],
+    },
+    {
+      triggerExpressions: [
+        /\bopen\b/i,
+        /\brem\b/i,
+        /\bpoll\b/i,
+        /\bpreview\b/i,
+      ],
     },
   ];
 
