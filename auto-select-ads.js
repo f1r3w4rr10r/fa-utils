@@ -49,7 +49,7 @@
       definitelyAdvertisementExpressions: [
         /\bclosed\b/i,
         /\bhalfbody\b/i,
-        /\bopen\b/i,
+        /\bopen(?:ed)?\b/i,
         /\bsale\b/i,
         /\bslots?\b/i,
       ],
@@ -61,6 +61,7 @@
         /\blive\b/i,
         /\boffline\b/i,
         /\bonline\b/i,
+        /\bpreorders?\b/i,
         /\bslots?\b/i,
         /\bup\b/i,
       ],
@@ -70,6 +71,7 @@
       definitelyAdvertisementExpressions: [
         /\bauction\b/i,
         /\bclosed\b/i,
+        /\bdiscount\b/i,
         /\bmultislot\b/i,
         /\bo ?p ?e ?n\b/i,
         /\bprice\b/i,
@@ -112,7 +114,7 @@
       triggerExpressions: [
         /\bboosty\b/i,
         /\bpatreon\b/i,
-        /\bsub(?:scribe)?\s star\b/i,
+        /\bsub(?:scribe)?\s?star\b/i,
       ],
       definitelyAdvertisementExpressions: [/\bpreview\b/i, /\bteaser\b/i],
     },
@@ -122,7 +124,11 @@
     },
     {
       triggerExpressions: [/\b(?:multi)?slots?\b/i],
-      definitelyAdvertisementExpressions: [/\bavailable\b/i],
+      definitelyAdvertisementExpressions: [
+        /\bavailable\b/i,
+        /\bopen\b/i,
+        /\bsketch\b/i,
+      ],
     },
     {
       triggerExpressions: [
@@ -131,6 +137,7 @@
         /\bpoll\b/i,
         /\bpreview\b/i,
         /\brem\b/i,
+        /\bsold\b/i,
         /\bteaser\b/i,
         /\bwip\b/i,
       ],
