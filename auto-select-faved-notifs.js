@@ -10,28 +10,14 @@
 // ==/UserScript==
 
 (async function () {
-  /**
-   * @returns {NodeListOf<HTMLLabelElement>}
-   */
-  function getLabels() {
-    return document.querySelectorAll("section.gallery label");
-  }
+  "use strict";
 
   /**
-   * @param {HTMLElement} label
-   * @returns {string}
-   */
-  function getSubmissionLink(label) {
-    return label.querySelector("a").href;
-  }
-
-  /**
-   * @param {string} url
+   * @param {HTMLElement} figure
    * @returns {Promise<boolean>}
    */
-  async function checkIfFaved(url) {
-    console.debug("Checking if submission is faved: ", url);
-
+  async function checkIfFaved(figure) {
+    const url = figure.querySelector("a").href;
     const result = await fetch(url);
     if (!result.ok) {
       throw new Error(
@@ -44,66 +30,49 @@
       "text/html",
     );
 
-    const favUrl =
-      doc.querySelector(".favorite-nav a:nth-child(2)")?.href ?? "";
+    const firstButton = doc.querySelector(".favorite-nav a:first-child");
+    const secondButton = doc.querySelector(".favorite-nav a:nth-child(2)");
 
-    const faved = /\bunfav\b/.match(favUrl);
-
-    console.debug("Submission is faved: ", url, faved);
-
-    return faved;
+    if (/\bunfav\b/.match(firstButton?.href ?? "")) return true;
+    if (/\bunfav\b/.match(secondButton?.href ?? "")) return true;
+    return false;
   }
 
   /**
-   * @param {HTMLElement} label
-   */
-  function outlineSubmission(label) {
-    const figure = label.parentElement.parentElement;
-    if (!(figure instanceof HTMLElement)) return;
-
-    figure.style.outline = "green 3px solid";
-  }
-
-  /**
-   * @param {HTMLElement} label
-   * @returns {void}
-   */
-  function selectSubmission(label) {
-    label.querySelector("input").checked = true;
-  }
-
-  /**
-   * @param {NodeListOf<HTMLElement>} labels
    * @yields {Promise<boolean>}
    */
-  async function* iterateLabels(labels) {
-    for (const label of labels) {
-      const isFaved = await checkIfFaved(getSubmissionLink(label));
+  async function* iterateFigures() {
+    for (const figure of document.querySelectorAll("section.gallery figure")) {
+      const isFaved = await checkIfFaved(figure);
       if (isFaved) {
-        outlineSubmission(label);
-        selectSubmission(label);
+        figure.classList.add("faved");
+        figure.querySelector("input").checked = true;
       }
       yield isFaved;
     }
   }
 
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync("figure.faved { outline: green 3px solid; }");
+  document.adoptedStyleSheets.push(sheet);
+
   const sectionHeader = document.querySelector(".section-header");
 
   const baseMessage = "Selecting faved submissions…";
 
-  const outlineFavedMessage = document.createElement("p");
-  outlineFavedMessage.textContent = baseMessage;
-  sectionHeader.appendChild(outlineFavedMessage);
+  const messagePara = document.createElement("p");
+  messagePara.textContent = baseMessage;
+  sectionHeader.appendChild(messagePara);
 
   let checked = 0;
   let faved = 0;
 
-  for await (const isFaved of iterateLabels(getLabels())) {
-    checked += 1;
+  for await (const isFaved of iterateFigures()) {
     if (isFaved) faved += 1;
+    checked += 1;
 
-    outlineFavedMessage.textContent = `${baseMessage} | Checked: ${checked} | Faved: ${faved}`;
+    messagePara.textContent = `${baseMessage} ${faved}/${checked}`;
   }
 
-  outlineFavedMessage.textContent = `Selected ${faved} faved submissions.`;
+  messagePara.textContent = `Selected ${faved}/${checked} faved submissions.`;
 })();

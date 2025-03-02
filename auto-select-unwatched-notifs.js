@@ -17,8 +17,6 @@
    * @returns {Promise<[string[], string | null]>}
    */
   async function getWatchedFromPage(url) {
-    console.debug("Getting watched users from: ", url);
-
     const result = await fetch(url);
     if (!result.ok) {
       throw new Error(
@@ -34,8 +32,6 @@
 
     const nextUrl = doc.querySelector(".floatright form").action;
 
-    console.debug("Got watched users from: ", url, "Next: ", nextUrl);
-
     return [userLinks, nextUrl === url ? null : nextUrl];
   }
 
@@ -43,8 +39,6 @@
    * @returns {Promise<string[]>}
    */
   async function getWatched() {
-    console.debug("Getting the list of watched users.");
-
     const watchList = [];
 
     const userAnchor = document.querySelector("article.mobile-menu a");
@@ -58,68 +52,35 @@
       watchList.push(...pageWatchList);
     }
 
-    console.debug("Got the list of watched users.");
-
     return watchList;
   }
 
   /**
-   * @param {HTMLElement} label
-   * @returns {string}
-   */
-  function getUserLink(label) {
-    return label.querySelector("p:last-child > a").href;
-  }
-
-  /**
-   * @param {HTMLElement} label
-   * @returns {void}
-   */
-  function selectSubmission(label) {
-    label.querySelector("input").checked = true;
-  }
-
-  /**
-   * @returns {NodeListOf<HTMLLabelElement>}
-   */
-  function getLabels() {
-    return document.querySelectorAll("section.gallery label");
-  }
-
-  /**
-   * @param {HTMLElement} label
-   */
-  function outlineSubmission(label) {
-    const figure = label.parentElement.parentElement;
-    if (!(figure instanceof HTMLElement)) return;
-
-    figure.style.outline = "red 3px solid";
-  }
-
-  /**
-   * @param {NodeListOf<HTMLElement>} labels
    * @param {string[]} watched
    * @returns {Promise<number>}
    */
-  async function iterateLabels(labels, watched) {
+  async function iterateLabels(watched) {
+    const figures = document.querySelectorAll("section.gallery figure");
     let selected = 0;
 
-    for (const label of labels) {
-      const userLink = getUserLink(label);
+    for (const figure of figures) {
+      const userLink = figure.querySelector(
+        "figcaption label p:last-child a",
+      ).href;
 
-      if (watched.includes(userLink)) {
-        console.debug("Watched and not checked: ", userLink);
-        continue;
-      }
+      if (watched.includes(userLink)) continue;
 
-      console.debug("Not watched and checked: ", userLink);
-      outlineSubmission(label);
-      selectSubmission(label);
+      figure.classList.add("unwatched");
+      figure.querySelector("input").checked = true;
       selected += 1;
     }
 
     return selected;
   }
+
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync("figure.unwatched { outline: red 3px solid; }");
+  document.adoptedStyleSheets.push(sheet);
 
   const sectionHeader = document.querySelector(".section-header");
 
@@ -130,13 +91,9 @@
 
   const watched = await getWatched();
 
-  console.log("Currently watching: ", watched.length);
-
-  const selected = await iterateLabels(getLabels(), watched);
+  const selected = await iterateLabels(watched);
 
   const message = `Selected ${selected} unwatched submissions.`;
-
-  console.log(message);
 
   unwatchedSelectMessage.textContent = message;
 })();
