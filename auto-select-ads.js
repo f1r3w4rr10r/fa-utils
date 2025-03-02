@@ -52,6 +52,7 @@
       definitelyAdvertisementKeywords: [
         "auction",
         "closed",
+        "multislot",
         "open",
         "remind",
         "rmd",
