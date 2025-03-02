@@ -109,7 +109,11 @@
       definitelyAdvertisementExpressions: [/\bwinners?\b/i],
     },
     {
-      triggerExpressions: [/\bpatreon\b/i],
+      triggerExpressions: [
+        /\bboosty\b/i,
+        /\bpatreon\b/i,
+        /\bsub(?:scribe)?\s star\b/i,
+      ],
       definitelyAdvertisementExpressions: [/\bpreview\b/i, /\bteaser\b/i],
     },
     {
