@@ -26,8 +26,126 @@
    */
 
   /**
-   * @typedef {"advertisement" | "ambiguous" | "notAdvertisement"} AdvertisementCheckResult
+   * @typedef {"advertisement" | "ambiguous" | "notAdvertisement"} AdvertisementLevel
    */
+
+  /**
+   * @typedef {AdvertisementLevel | "notTagged"} TagAdvertisementLevel
+   */
+
+  class AdvertisementCheckResult {
+    /**
+     * @param {AdvertisementLevel | null} nameResult
+     * @param {TagAdvertisementLevel | null} tagsResult
+     */
+    constructor(nameResult, tagsResult) {
+      this.#nameResult = nameResult;
+      this.#tagsResult = tagsResult;
+    }
+
+    /** @type {AdvertisementLevel | null} */
+    #nameResult = null;
+
+    /** @type {TagAdvertisementLevel | null} */
+    #tagsResult = null;
+
+    /**
+     * @returns {AdvertisementLevel | null}
+     */
+    get nameResult() {
+      return this.#nameResult;
+    }
+
+    /**
+     * @param {AdvertisementLevel | null} value
+     */
+    set nameResult(value) {
+      this.#nameResult = this.#coalesceNameResultLevel(this.#nameResult, value);
+    }
+
+    /**
+     * @returns {TagAdvertisementLevel | null}
+     */
+    get tagsResult() {
+      return this.#tagsResult;
+    }
+
+    /**
+     * @param {TagAdvertisementLevel | null} value
+     */
+    set tagsResult(value) {
+      this.#tagsResult = this.#coalesceTagsResultLevel(this.#tagsResult, value);
+    }
+
+    /**
+     * @returns {AdvertisementLevel | null}
+     */
+    get result() {
+      if (
+        this.#nameResult === "notAdvertisement" ||
+        this.#tagsResult === "notAdvertisement"
+      ) {
+        return "notAdvertisement";
+      }
+
+      if (
+        this.#nameResult === "advertisement" ||
+        this.#tagsResult === "advertisement"
+      ) {
+        return "advertisement";
+      }
+
+      if (
+        this.#nameResult === "ambiguous" ||
+        this.#tagsResult === "ambiguous"
+      ) {
+        return "ambiguous";
+      }
+
+      return null;
+    }
+
+    /**
+     * @returns {"notTagged" | null}
+     */
+    get tagStatus() {
+      return this.#tagsResult === "notTagged" ? "notTagged" : null;
+    }
+
+    /**
+     * @param {AdvertisementLevel | null} current
+     * @param {AdvertisementLevel | null} newValue
+     * @returns {AdvertisementLevel | null}
+     */
+    #coalesceNameResultLevel(current, newValue) {
+      if (current === "notAdvertisement") {
+        return "notAdvertisement";
+      }
+
+      if (current === "advertisement" && newValue !== "ambiguous") {
+        return newValue;
+      }
+
+      if (current !== null && newValue === null) {
+        return current;
+      }
+
+      return newValue;
+    }
+
+    /**
+     * @param {TagAdvertisementLevel | null} current
+     * @param {TagAdvertisementLevel | null} newValue
+     * @returns {TagAdvertisementLevel | null}
+     */
+    #coalesceTagsResultLevel(current, newValue) {
+      if (current === "notTagged" || newValue === "notTagged") {
+        return current;
+      }
+
+      return this.#coalesceNameResultLevel(current, newValue);
+    }
+  }
 
   /** @type {AdvertisementCheckSpec[]} */
   const advertisementCheckSpecs = [
@@ -148,10 +266,10 @@
   /**
    * @param {string} text
    * @param {AdvertisementCheckSpec} spec
-   * @returns {AdvertisementCheckResult | null}
+   * @returns {AdvertisementLevel | null}
    */
   function checkAgainstAdvertisementSpec(text, spec) {
-    /** @type {AdvertisementCheckResult | null} */
+    /** @type {AdvertisementLevel | null} */
     let result = null;
 
     for (const regex of spec.triggerExpressions) {
@@ -191,27 +309,21 @@
    * @returns {AdvertisementCheckResult}
    */
   function checkAgainstAdvertisementSpecs(submissionName, tags) {
-    let atLeastOneAmbiguous = false;
+    /** @type {AdvertisementCheckResult} */
+    const result = new AdvertisementCheckResult(
+      null,
+      tags === "" ? "notTagged" : null,
+    );
 
     for (const spec of advertisementCheckSpecs) {
-      const nameResult = checkAgainstAdvertisementSpec(submissionName, spec);
-      const tagsResult = checkAgainstAdvertisementSpec(tags, spec);
-
-      if (nameResult === null && tagsResult === null) continue;
-
-      if (
-        nameResult === "notAdvertisement" ||
-        tagsResult === "notAdvertisement"
-      )
-        return "notAdvertisement";
-
-      if (nameResult === "advertisement" || tagsResult === "advertisement")
-        return "advertisement";
-
-      atLeastOneAmbiguous = true;
+      result.nameResult = checkAgainstAdvertisementSpec(submissionName, spec);
+      result.tagsResult =
+        result.tagsResult === "notTagged"
+          ? "notTagged"
+          : checkAgainstAdvertisementSpec(tags, spec);
     }
 
-    return atLeastOneAmbiguous ? "ambiguous" : "notAdvertisement";
+    return result;
   }
 
   /**
@@ -225,12 +337,13 @@
     let ambiguous = 0;
 
     for (const figure of figures) {
-      const submissionName = figure.querySelector("figcaption a").textContent;
+      const nameAnchor = figure.querySelector("figcaption a");
+      const submissionName = nameAnchor.textContent;
       const tags = figure.querySelector("img").dataset.tags;
 
       const result = checkAgainstAdvertisementSpecs(submissionName, tags);
 
-      switch (result) {
+      switch (result.result) {
         case "advertisement":
           figure.classList.add("advertisement");
           figure.querySelector("input").checked = true;
@@ -242,6 +355,10 @@
           ambiguous += 1;
           break;
       }
+
+      if (result.tagStatus === "notTagged") {
+        nameAnchor.classList.add("not-tagged");
+      }
     }
 
     return [advertisements, ambiguous];
@@ -250,6 +367,7 @@
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(
     `
+a.not-tagged { color: orange; }
 figure.advertisement { outline: orange 3px solid; }
 figure.maybe-advertisement { outline: yellow 3px solid; }
 `.trim(),
