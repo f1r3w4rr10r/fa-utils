@@ -12,154 +12,6 @@
 (async function () {
   "use strict";
 
-  class AdvertisementCheckResult {
-    /**
-     * @param {boolean} isTagged
-     * @param {AdvertisementLevel | null} [nameResult]
-     * @param {AdvertisementLevel | null} [descriptionResult]
-     * @param {AdvertisementLevel | null} [tagsResult]
-     */
-    constructor(isTagged, nameResult, descriptionResult, tagsResult) {
-      this.#isTagged = isTagged;
-      this.#nameResult = nameResult ?? null;
-      this.#descriptionResult = descriptionResult ?? null;
-      this.#tagsResult = tagsResult ?? null;
-    }
-
-    /** @type {AdvertisementLevel | null} */
-    #nameResult = null;
-
-    /** @type {AdvertisementLevel | null} */
-    #descriptionResult = null;
-
-    /** @type {AdvertisementLevel | null} */
-    #tagsResult = null;
-
-    #isTagged = false;
-
-    /** @type {DecisionLogEntry[]} */
-    #decisionLog = [];
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get nameResult() {
-      return this.#nameResult;
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} value
-     */
-    set nameResult(value) {
-      this.#nameResult = this.#coalesceResultLevel(this.#nameResult, value);
-    }
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get descriptionResult() {
-      return this.#descriptionResult;
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} value
-     */
-    set descriptionResult(value) {
-      this.#descriptionResult = this.#coalesceResultLevel(
-        this.#descriptionResult,
-        value,
-      );
-    }
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get tagsResult() {
-      return this.#tagsResult;
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} value
-     */
-    set tagsResult(value) {
-      this.#tagsResult = this.#coalesceResultLevel(this.#tagsResult, value);
-    }
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get result() {
-      if (
-        this.#nameResult === "notAdvertisement" ||
-        this.#descriptionResult === "notAdvertisement" ||
-        this.#tagsResult === "notAdvertisement"
-      ) {
-        return "notAdvertisement";
-      }
-
-      if (
-        this.#nameResult === "advertisement" ||
-        this.#descriptionResult === "advertisement" ||
-        this.#tagsResult === "advertisement"
-      ) {
-        return "advertisement";
-      }
-
-      if (
-        this.#nameResult === "ambiguous" ||
-        this.#descriptionResult === "ambiguous" ||
-        this.#tagsResult === "ambiguous"
-      ) {
-        return "ambiguous";
-      }
-
-      return null;
-    }
-
-    /**
-     * @returns {boolean}
-     */
-    get isTagged() {
-      return this.#isTagged;
-    }
-
-    get decisionLog() {
-      return this.#decisionLog;
-    }
-
-    /**
-     * @param {DecisionLogEntry} log
-     */
-    addToLog(log) {
-      if (log.name === null && log.description === null && log.tags === null) {
-        return;
-      }
-
-      this.#decisionLog.push(log);
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} current
-     * @param {AdvertisementLevel | null} newValue
-     * @returns {AdvertisementLevel | null}
-     */
-    #coalesceResultLevel(current, newValue) {
-      if (newValue === null) {
-        return current;
-      }
-
-      if (current === "notAdvertisement" || newValue === "notAdvertisement") {
-        return "notAdvertisement";
-      }
-
-      if (current === "advertisement" && newValue === "ambiguous") {
-        return current;
-      }
-
-      return newValue;
-    }
-  }
-
   // The second "c" is a kyrillic "s";
   const commissionRegexString = "[cс]omm(?:ission)?s?";
   const commissionBoundedRegexString = `(?:^|\\W)${commissionRegexString}\\b`;
@@ -358,6 +210,154 @@
       },
     },
   ];
+
+  class AdvertisementCheckResult {
+    /**
+     * @param {boolean} isTagged
+     * @param {AdvertisementLevel | null} [nameResult]
+     * @param {AdvertisementLevel | null} [descriptionResult]
+     * @param {AdvertisementLevel | null} [tagsResult]
+     */
+    constructor(isTagged, nameResult, descriptionResult, tagsResult) {
+      this.#isTagged = isTagged;
+      this.#nameResult = nameResult ?? null;
+      this.#descriptionResult = descriptionResult ?? null;
+      this.#tagsResult = tagsResult ?? null;
+    }
+
+    /** @type {AdvertisementLevel | null} */
+    #nameResult = null;
+
+    /** @type {AdvertisementLevel | null} */
+    #descriptionResult = null;
+
+    /** @type {AdvertisementLevel | null} */
+    #tagsResult = null;
+
+    #isTagged = false;
+
+    /** @type {DecisionLogEntry[]} */
+    #decisionLog = [];
+
+    /**
+     * @returns {AdvertisementLevel | null}
+     */
+    get nameResult() {
+      return this.#nameResult;
+    }
+
+    /**
+     * @param {AdvertisementLevel | null} value
+     */
+    set nameResult(value) {
+      this.#nameResult = this.#coalesceResultLevel(this.#nameResult, value);
+    }
+
+    /**
+     * @returns {AdvertisementLevel | null}
+     */
+    get descriptionResult() {
+      return this.#descriptionResult;
+    }
+
+    /**
+     * @param {AdvertisementLevel | null} value
+     */
+    set descriptionResult(value) {
+      this.#descriptionResult = this.#coalesceResultLevel(
+        this.#descriptionResult,
+        value,
+      );
+    }
+
+    /**
+     * @returns {AdvertisementLevel | null}
+     */
+    get tagsResult() {
+      return this.#tagsResult;
+    }
+
+    /**
+     * @param {AdvertisementLevel | null} value
+     */
+    set tagsResult(value) {
+      this.#tagsResult = this.#coalesceResultLevel(this.#tagsResult, value);
+    }
+
+    /**
+     * @returns {AdvertisementLevel | null}
+     */
+    get result() {
+      if (
+        this.#nameResult === "notAdvertisement" ||
+        this.#descriptionResult === "notAdvertisement" ||
+        this.#tagsResult === "notAdvertisement"
+      ) {
+        return "notAdvertisement";
+      }
+
+      if (
+        this.#nameResult === "advertisement" ||
+        this.#descriptionResult === "advertisement" ||
+        this.#tagsResult === "advertisement"
+      ) {
+        return "advertisement";
+      }
+
+      if (
+        this.#nameResult === "ambiguous" ||
+        this.#descriptionResult === "ambiguous" ||
+        this.#tagsResult === "ambiguous"
+      ) {
+        return "ambiguous";
+      }
+
+      return null;
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    get isTagged() {
+      return this.#isTagged;
+    }
+
+    get decisionLog() {
+      return this.#decisionLog;
+    }
+
+    /**
+     * @param {DecisionLogEntry} log
+     */
+    addToLog(log) {
+      if (log.name === null && log.description === null && log.tags === null) {
+        return;
+      }
+
+      this.#decisionLog.push(log);
+    }
+
+    /**
+     * @param {AdvertisementLevel | null} current
+     * @param {AdvertisementLevel | null} newValue
+     * @returns {AdvertisementLevel | null}
+     */
+    #coalesceResultLevel(current, newValue) {
+      if (newValue === null) {
+        return current;
+      }
+
+      if (current === "notAdvertisement" || newValue === "notAdvertisement") {
+        return "notAdvertisement";
+      }
+
+      if (current === "advertisement" && newValue === "ambiguous") {
+        return current;
+      }
+
+      return newValue;
+    }
+  }
 
   /**
    * @param {string} text
