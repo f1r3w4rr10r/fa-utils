@@ -146,16 +146,16 @@
   ];
 
   /**
-   * @param {string} name
+   * @param {string} text
    * @param {AdvertisementCheckSpec} spec
    * @returns {AdvertisementCheckResult | null}
    */
-  function checkAgainstAdvertisementSpec(name, spec) {
+  function checkAgainstAdvertisementSpec(text, spec) {
     /** @type {AdvertisementCheckResult | null} */
     let result = null;
 
     for (const regex of spec.triggerExpressions) {
-      if (regex.test(name)) {
+      if (regex.test(text)) {
         result = "ambiguous";
         break;
       }
@@ -165,7 +165,7 @@
       if (spec.definitelyAdvertisement) result = "advertisement";
       else if (spec.definitelyAdvertisementExpressions) {
         for (const regex of spec.definitelyAdvertisementExpressions) {
-          if (regex.test(name)) {
+          if (regex.test(text)) {
             result = "advertisement";
             break;
           }
@@ -175,7 +175,7 @@
 
     if (result !== null && spec.definitelyNotAdvertisementExpressions) {
       for (const regex of spec.definitelyNotAdvertisementExpressions) {
-        if (regex.test(name)) {
+        if (regex.test(text)) {
           result = "notAdvertisement";
           break;
         }
@@ -187,16 +187,26 @@
 
   /**
    * @param {string} submissionName
+   * @param {string} tags
    * @returns {AdvertisementCheckResult}
    */
-  function checkAgainstAdvertisementSpecs(submissionName) {
+  function checkAgainstAdvertisementSpecs(submissionName, tags) {
     let atLeastOneAmbiguous = false;
 
     for (const spec of advertisementCheckSpecs) {
-      const result = checkAgainstAdvertisementSpec(submissionName, spec);
-      if (result === null) continue;
+      const nameResult = checkAgainstAdvertisementSpec(submissionName, spec);
+      const tagsResult = checkAgainstAdvertisementSpec(tags, spec);
 
-      if (result !== "ambiguous") return result;
+      if (nameResult === null && tagsResult === null) continue;
+
+      if (
+        nameResult === "notAdvertisement" ||
+        tagsResult === "notAdvertisement"
+      )
+        return "notAdvertisement";
+
+      if (nameResult === "advertisement" || tagsResult === "advertisement")
+        return "advertisement";
 
       atLeastOneAmbiguous = true;
     }
@@ -216,8 +226,10 @@
 
     for (const figure of figures) {
       const submissionName = figure.querySelector("figcaption a").textContent;
+      const tags = figure.querySelector("img").dataset.tags;
 
-      const result = checkAgainstAdvertisementSpecs(submissionName);
+      const result = checkAgainstAdvertisementSpecs(submissionName, tags);
+
       switch (result) {
         case "advertisement":
           figure.classList.add("advertisement");
