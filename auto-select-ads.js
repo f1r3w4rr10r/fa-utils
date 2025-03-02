@@ -337,7 +337,8 @@
     let ambiguous = 0;
 
     for (const figure of figures) {
-      const nameAnchor = figure.querySelector("figcaption a");
+      const figcaption = figure.querySelector("figcaption");
+      const nameAnchor = figcaption.querySelector("a");
       const submissionName = nameAnchor.textContent;
       const tags = figure.querySelector("img").dataset.tags;
 
@@ -357,7 +358,7 @@
       }
 
       if (result.tagStatus === "notTagged") {
-        nameAnchor.classList.add("not-tagged");
+        figcaption.classList.add("not-tagged");
       }
     }
 
@@ -367,9 +368,9 @@
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(
     `
-a.not-tagged { color: orange; }
 figure.advertisement { outline: orange 3px solid; }
 figure.maybe-advertisement { outline: yellow 3px solid; }
+figcaption.not-tagged input { outline: orange 3px solid; }
 `.trim(),
   );
   document.adoptedStyleSheets.push(sheet);
