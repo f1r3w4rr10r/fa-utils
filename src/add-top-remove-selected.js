@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Add a "Remove Selected" button to the top of submission notifications
-// @namespace    http://tampermonkey.net/
-// @version      0.1
+// @name         Add a "Remove Selected" button
+// @namespace    https://github.com/f1r3w4rr10r/fa-utils
+// @version      1.0.0
 // @description  This adds a second "Remove Selected" button to the top of the submission notifications pages.
-// @author       You
+// @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        none

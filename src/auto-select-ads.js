@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Auto-select advertisement submission notifications on FurAffinity
-// @namespace    http://tampermonkey.net/
-// @version      0.1
+// @name         Auto-select advertisements
+// @namespace    https://github.com/f1r3w4rr10r/fa-utils
+// @version      0.1.0
 // @description  This automatically selects submission notifications, that are advertisements.
-// @author       You
+// @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        none

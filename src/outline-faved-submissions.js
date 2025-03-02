@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Outline already faved submissions on FurAffinity
-// @namespace    http://tampermonkey.net/
-// @version      0.1
+// @name         Outline already faved
+// @namespace    https://github.com/f1r3w4rr10r/fa-utils
+// @version      1.0.0
 // @description  This automatically outlines submissions, that are already faved.
-// @author       You
+// @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/gallery/*
 // @match        https://www.furaffinity.net/scraps/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
