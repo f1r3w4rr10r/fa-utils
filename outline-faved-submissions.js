@@ -5,6 +5,7 @@
 // @description  This automatically outlines submissions, that are already faved.
 // @author       You
 // @match        https://www.furaffinity.net/gallery/*
+// @match        https://www.furaffinity.net/scraps/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        none
 // ==/UserScript==
