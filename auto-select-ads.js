@@ -41,7 +41,7 @@
       definitelyAdvertisement: true,
     },
     {
-      triggerExpressions: [/\bcomm(?:ission)?s?\b/i, /\bsketch\b/i],
+      triggerExpressions: [/\bauction\b/i, /\bcomm(?:ission)?s?\b/i],
       definitelyAdvertisementExpressions: [
         /\bclosed\b/i,
         /\bhalfbody\b/i,
@@ -60,16 +60,17 @@
       ],
     },
     {
-      triggerExpressions: [/\bych\b/i],
+      triggerExpressions: [/ych/i],
       definitelyAdvertisementExpressions: [
         /\bauction\b/i,
         /\bclosed\b/i,
         /\bmultislot\b/i,
         /\bopen\b/i,
         /\bprice\b/i,
-        /\bslots?\b/i,
+        /\braffle\b/i,
         /\brem(?:ind(?:er)?)?\b/i,
         /\brmd\b/i,
+        /\bslots?\b/i,
       ],
       definitelyNotAdvertisementExpressions: [
         /\bcommission\b/i,
