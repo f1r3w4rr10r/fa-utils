@@ -39,7 +39,7 @@
       definitelyAdvertisement: true,
     },
     {
-      mustHaveKeywords: ["commissions"],
+      mustHaveKeywords: ["commission"],
       definitelyAdvertisementKeywords: ["open"],
     },
     {
@@ -48,7 +48,7 @@
     },
     {
       mustHaveKeywords: ["ych"],
-      definitelyAdvertisementKeywords: ["auction", "open", "reminder"],
+      definitelyAdvertisementKeywords: ["auction", "open", "remind", "rmd"],
       definitelyNotAdvertisementKeywords: ["finished"],
     },
     {
