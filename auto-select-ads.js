@@ -117,13 +117,16 @@
       definitelyAdvertisementExpressions: [/\bprint\b/i],
     },
     {
+      triggerExpressions: [/\b(?:multi)?slots?\b/i],
+      definitelyAdvertisementExpressions: [/\bavailable\b/i],
+    },
+    {
       triggerExpressions: [
         /\bclosed\b/i,
         /\bopen\b/i,
         /\bpoll\b/i,
         /\bpreview\b/i,
         /\brem\b/i,
-        /\b(?:multi)?slot\b/i,
         /\bteaser\b/i,
         /\bwip\b/i,
       ],
