@@ -39,8 +39,9 @@
       definitelyAdvertisement: true,
     },
     {
-      mustHaveKeywords: ["commission"],
-      definitelyAdvertisementKeywords: ["open"],
+      mustHaveKeywords: ["commission", "comm"],
+      definitelyAdvertisementKeywords: ["open", "closed"],
+      definitelyNotAdvertisementKeywords: ["for"],
     },
     {
       mustHaveKeywords: ["stream"],
@@ -48,11 +49,25 @@
     },
     {
       mustHaveKeywords: ["ych"],
-      definitelyAdvertisementKeywords: ["auction", "open", "remind", "rmd"],
-      definitelyNotAdvertisementKeywords: ["finished"],
+      definitelyAdvertisementKeywords: [
+        "auction",
+        "closed",
+        "open",
+        "remind",
+        "rmd",
+      ],
+      definitelyNotAdvertisementKeywords: [
+        "commission",
+        "finished",
+        "from",
+        "result",
+      ],
     },
     {
       mustHaveKeywords: ["rem"],
+    },
+    {
+      mustHaveKeywords: ["open"],
     },
   ];
 
