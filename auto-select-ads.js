@@ -77,6 +77,7 @@
         /\braffle\b/i,
         /\brem(?:ind(?:er)?)?\d*\b/i,
         /\brmd\b/i,
+        /\bsale\b/i,
         /\bslots?\b/i,
         /\bsold\b/i,
       ],
@@ -93,6 +94,7 @@
       definitelyAdvertisementExpressions: [
         /\$/,
         /\bbase\b/i,
+        /\bclaimed\b/i,
         /\b(?:multi)?slot\b/i,
         /\bprice\b/i,
       ],
@@ -115,6 +117,7 @@
     },
     {
       triggerExpressions: [
+        /\bclosed\b/i,
         /\bopen\b/i,
         /\bpoll\b/i,
         /\bpreview\b/i,
