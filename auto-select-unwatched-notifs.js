@@ -87,9 +87,19 @@
   }
 
   /**
+   * @param {HTMLElement} label
+   */
+  function outlineSubmission(label) {
+    const figure = label.parentElement.parentElement;
+    if (!(figure instanceof HTMLElement)) return;
+
+    figure.style.outline = "red 3px solid";
+  }
+
+  /**
    * @param {NodeListOf<HTMLElement>} labels
    * @param {string[]} watched
-   * @returns {Promise<CounterCache>}
+   * @returns {Promise<number>}
    */
   async function iterateLabels(labels, watched) {
     let selected = 0;
@@ -103,6 +113,7 @@
       }
 
       console.debug("Not watched and checked: ", userLink);
+      outlineSubmission(label);
       selectSubmission(label);
       selected += 1;
     }
