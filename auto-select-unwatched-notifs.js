@@ -30,7 +30,11 @@
 
     const userLinks = Array.from(doc.querySelectorAll("a")).map((a) => a.href);
 
-    const nextUrl = doc.querySelector(".floatright form").action;
+    const nextForm = doc.querySelector(".floatright form");
+    if (!(nextForm instanceof HTMLFormElement))
+      throw new Error(`Could not find the next page form on: ${url}`);
+
+    const nextUrl = nextForm.action;
 
     return [userLinks, nextUrl === url ? null : nextUrl];
   }
@@ -42,6 +46,9 @@
     const watchList = [];
 
     const userAnchor = document.querySelector("article.mobile-menu a");
+    if (!(userAnchor instanceof HTMLAnchorElement))
+      throw new Error("Could not get the user anchor.");
+
     const userName = userAnchor.href.match(/user\/(.+?)$/)[1];
 
     let nextUrl = `https://www.furaffinity.net/watchlist/by/${userName}/`;
@@ -60,13 +67,19 @@
    * @returns {Promise<number>}
    */
   async function iterateLabels(watched) {
-    const figures = document.querySelectorAll("section.gallery figure");
+    const figures = Array.from(
+      document.querySelectorAll("section.gallery figure"),
+    );
     let selected = 0;
 
     for (const figure of figures) {
-      const userLink = figure.querySelector(
+      const userAnchor = figure.querySelector(
         "figcaption label p:last-child a",
-      ).href;
+      );
+      if (!(userAnchor instanceof HTMLAnchorElement))
+        throw new Error("Could not find a user anchor.");
+
+      const userLink = userAnchor.href;
 
       if (watched.includes(userLink)) continue;
 

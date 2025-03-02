@@ -112,7 +112,9 @@
    * @returns {[number, number]}
    */
   function iterateLabels() {
-    const figures = document.querySelectorAll("section.gallery figure");
+    const figures = Array.from(
+      document.querySelectorAll("section.gallery figure"),
+    );
     let advertisements = 0;
     let ambiguous = 0;
 

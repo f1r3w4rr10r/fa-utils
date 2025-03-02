@@ -14,7 +14,7 @@
   "use strict";
 
   /**
-   * @param {HTMLElement} figure
+   * @param {Element} figure
    * @returns {Promise<boolean>}
    */
   async function checkIfFaved(figure) {
@@ -33,9 +33,14 @@
 
     const firstButton = doc.querySelector(".favorite-nav a:first-child");
     const secondButton = doc.querySelector(".favorite-nav a:nth-child(2)");
+    if (
+      !(firstButton instanceof HTMLAnchorElement) ||
+      !(secondButton instanceof HTMLAnchorElement)
+    )
+      throw new Error(`One of the buttons could not be found on: ${url}`);
 
-    if (/\bunfav\b/.match(firstButton?.href ?? "")) return true;
-    if (/\bunfav\b/.match(secondButton?.href ?? "")) return true;
+    if (/\bunfav\b/.test(firstButton.href)) return true;
+    if (/\bunfav\b/.test(secondButton.href)) return true;
     return false;
   }
 
@@ -43,7 +48,11 @@
    * @yields {Promise<boolean>}
    */
   async function* iterateFigures() {
-    for (const figure of document.querySelectorAll("section.gallery figure")) {
+    const figures = Array.from(
+      document.querySelectorAll("section.gallery figure"),
+    );
+
+    for (const figure of figures) {
       const isFaved = await checkIfFaved(figure);
       if (isFaved) figure.classList.add("faved");
       yield isFaved;
