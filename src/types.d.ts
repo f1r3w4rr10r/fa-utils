@@ -8,6 +8,7 @@ interface AdvertisementCheckSpecPart {
 interface AdvertisementCheckSpec {
   specName: string;
   name?: AdvertisementCheckSpecPart;
+  description?: AdvertisementCheckSpecPart;
   untaggedIsAd?: boolean;
   tags?: AdvertisementCheckSpecPart;
 }
@@ -26,5 +27,6 @@ interface DecisionLogEntry {
   specName: string;
   level: AdvertisementLevel;
   name: DecisionLogEntryPart | null;
+  description: DecisionLogEntryPart | null;
   tags: DecisionLogEntryPart | null;
 }

@@ -16,16 +16,21 @@
     /**
      * @param {boolean} isTagged
      * @param {AdvertisementLevel | null} [nameResult]
+     * @param {AdvertisementLevel | null} [descriptionResult]
      * @param {AdvertisementLevel | null} [tagsResult]
      */
-    constructor(isTagged, nameResult, tagsResult) {
+    constructor(isTagged, nameResult, descriptionResult, tagsResult) {
       this.#isTagged = isTagged;
       this.#nameResult = nameResult ?? null;
+      this.#descriptionResult = descriptionResult ?? null;
       this.#tagsResult = tagsResult ?? null;
     }
 
     /** @type {AdvertisementLevel | null} */
     #nameResult = null;
+
+    /** @type {AdvertisementLevel | null} */
+    #descriptionResult = null;
 
     /** @type {AdvertisementLevel | null} */
     #tagsResult = null;
@@ -52,6 +57,23 @@
     /**
      * @returns {AdvertisementLevel | null}
      */
+    get descriptionResult() {
+      return this.#descriptionResult;
+    }
+
+    /**
+     * @param {AdvertisementLevel | null} value
+     */
+    set descriptionResult(value) {
+      this.#descriptionResult = this.#coalesceResultLevel(
+        this.#descriptionResult,
+        value,
+      );
+    }
+
+    /**
+     * @returns {AdvertisementLevel | null}
+     */
     get tagsResult() {
       return this.#tagsResult;
     }
@@ -69,6 +91,7 @@
     get result() {
       if (
         this.#nameResult === "notAdvertisement" ||
+        this.#descriptionResult === "notAdvertisement" ||
         this.#tagsResult === "notAdvertisement"
       ) {
         return "notAdvertisement";
@@ -76,6 +99,7 @@
 
       if (
         this.#nameResult === "advertisement" ||
+        this.#descriptionResult === "advertisement" ||
         this.#tagsResult === "advertisement"
       ) {
         return "advertisement";
@@ -83,6 +107,7 @@
 
       if (
         this.#nameResult === "ambiguous" ||
+        this.#descriptionResult === "ambiguous" ||
         this.#tagsResult === "ambiguous"
       ) {
         return "ambiguous";
@@ -106,6 +131,10 @@
      * @param {DecisionLogEntry} log
      */
     addToLog(log) {
+      if (log.name === null && log.description === null && log.tags === null) {
+        return;
+      }
+
       this.#decisionLog.push(log);
     }
 
@@ -389,10 +418,11 @@
 
   /**
    * @param {string} submissionName
+   * @param {string} description
    * @param {string} tags
    * @returns {AdvertisementCheckResult}
    */
-  function checkAgainstAdvertisementSpecs(submissionName, tags) {
+  function checkAgainstAdvertisementSpecs(submissionName, description, tags) {
     const isUntagged = tags === "";
 
     /** @type {AdvertisementCheckResult} */
@@ -407,6 +437,14 @@
         },
       );
 
+      const [descriptionResult, descriptionLog] = checkAgainstAdvertisementSpec(
+        description,
+        {
+          triggers: [],
+          ...spec.description,
+        },
+      );
+
       /** @type {AdvertisementLevel | null} */
       let tagsResult = null;
 
@@ -415,7 +453,8 @@
 
       if (isUntagged) {
         if (
-          ["advertisement", "ambiguous"].includes(nameResult) &&
+          (["advertisement", "ambiguous"].includes(nameResult) ||
+            ["advertisement", "ambiguous"].includes(descriptionResult)) &&
           spec.untaggedIsAd
         ) {
           tagsResult = "advertisement";
@@ -427,21 +466,29 @@
         });
       }
 
-      if (spec.name && spec.tags && (!nameResult || !tagsResult)) {
-        continue;
+      // Parts present in the same spec are interpreted as being "AND"
+      // connected.
+      let specPartsCount = 0;
+      if (spec.name) specPartsCount++;
+      if (spec.description) specPartsCount++;
+      if (spec.tags) specPartsCount++;
+      if (specPartsCount > 1) {
+        if (spec.name && !nameResult) continue;
+        if (spec.description && !descriptionResult) continue;
+        if (spec.tags && !tagsResult) continue;
       }
 
       result.nameResult = nameResult;
+      result.descriptionResult = descriptionResult;
       result.tagsResult = tagsResult;
 
-      if (nameLog !== null || tagsLog !== null) {
-        result.addToLog({
-          specName: spec.specName,
-          level: result.result,
-          name: nameLog,
-          tags: tagsLog,
-        });
-      }
+      result.addToLog({
+        specName: spec.specName,
+        level: result.result,
+        name: nameLog,
+        description: descriptionLog,
+        tags: tagsLog,
+      });
     }
 
     return result;
@@ -466,7 +513,11 @@
       const tags = figure.querySelector("img").dataset.tags;
       const description = descriptions[checkbox.value].description;
 
-      const result = checkAgainstAdvertisementSpecs(submissionName, tags);
+      const result = checkAgainstAdvertisementSpecs(
+        submissionName,
+        description,
+        tags,
+      );
       const decisionLog = result.decisionLog;
 
       if (decisionLog.length) {
