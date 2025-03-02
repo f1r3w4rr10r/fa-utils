@@ -12,43 +12,6 @@
 (async function () {
   "use strict";
 
-  /**
-   * @typedef {Object} AdvertisementCheckSpecPart
-   * @property {RegExp[]} triggers
-   * @property {boolean} [isAlwaysAd]
-   * @property {RegExp[]} [isAdExpressions]
-   * @property {RegExp[]} [isNotAdExpressions]
-   */
-
-  /**
-   * @typedef {Object} AdvertisementCheckSpec
-   * @property {string} specName
-   * @property {AdvertisementCheckSpecPart} [name]
-   * @property {boolean} [untaggedIsAd]
-   * @property {AdvertisementCheckSpecPart} [tags]
-   */
-
-  /**
-   * @typedef {"advertisement" | "ambiguous" | "notAdvertisement"} AdvertisementLevel
-   */
-
-  /**
-   * @typedef {Object} DecisionLogEntryPart
-   * @property {RegExp} trigger
-   * @property {AdvertisementLevel} level
-   * @property {boolean} [isAlwaysAd]
-   * @property {RegExp} [isAdExpression]
-   * @property {RegExp} [isNotAdExpression]
-   */
-
-  /**
-   * @typedef {Object} DecisionLogEntry
-   * @property {string} specName
-   * @property {AdvertisementLevel} level
-   * @property {DecisionLogEntryPart | null} name
-   * @property {DecisionLogEntryPart | null} tags
-   */
-
   class AdvertisementCheckResult {
     /**
      * @param {boolean} isTagged
@@ -487,7 +450,7 @@
   /**
    * @returns {[number, number, number]}
    */
-  function iterateLabels() {
+  function iterateSubmissions() {
     const figures = Array.from(
       document.querySelectorAll("section.gallery figure"),
     );
@@ -501,6 +464,7 @@
       const nameAnchor = figcaption.querySelector("a");
       const submissionName = nameAnchor.textContent;
       const tags = figure.querySelector("img").dataset.tags;
+      const description = descriptions[checkbox.value].description;
 
       const result = checkAgainstAdvertisementSpecs(submissionName, tags);
       const decisionLog = result.decisionLog;
@@ -553,7 +517,7 @@ figcaption button { line-height: 1; margin-left: 1rem; padding: 0; }
     "Checking for advertisement submissions…";
   sectionHeader.appendChild(advertisementsSelectMessage);
 
-  const [advertisements, ambiguous, untagged] = iterateLabels();
+  const [advertisements, ambiguous, untagged] = iterateSubmissions();
 
   const message = `Selected ${advertisements} advertisement and ${ambiguous} ambiguous submissions. ${untagged} submissions were not tagged.`;
 

@@ -1,10 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig.json",
   "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
-    "lib": ["DOM", "ES2023"],
-    "noEmit": true,
-    "target": "ES2023"
-  }
+    "noEmit": true
+  },
+  "references": [
+    {
+      "path": "tsconfig.config.json"
+    },
+    {
+      "path": "tsconfig.scripts.json"
+    }
+  ]
 }

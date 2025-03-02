@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "include": ["src/"],
+  "compilerOptions": {
+    "checkJs": true,
+    "composite": true,
+    "lib": ["DOM", "ES2023"],
+    "target": "ES2023"
+  }
+}
