@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select advertisements
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      0.1.0
+// @version      0.2.0
 // @description  This automatically selects submission notifications, that are advertisements.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -13,512 +13,690 @@
 (async function () {
   "use strict";
 
-  // The second "c" is a kyrillic "s";
-  const commissionRegexString = "[cс]omm(?:ission)?s?";
-  const commissionBoundedRegexString = `(?:^|\\W)${commissionRegexString}\\b`;
-  const commissionRegex = new RegExp(commissionBoundedRegexString, "i");
-  const userRefRegex =
-    /(?:by|for|from)\s*(?::(?:icon\w+|\w+icon):|@@\w+)|YCH\s+for\s+\w+/i;
+  const DEFINITELY_AD_THRESHOLD = 50;
+  const AMBIGUOUS_AD_THRESHOLD = 25;
 
-  /** @type {AdvertisementCheckSpec[]} */
-  const advertisementCheckSpecs = [
-    {
-      specName: "obvious ads",
-      name: {
-        triggers: [
-          /\badopt(?:(?:able)?s?|ing)\b/i,
-          /\bpicarto\.tv\b/i,
-          /\breminder+\b/i,
-          /\bstreaming\b/i,
-          /^REM$/,
-        ],
-        isAlwaysAd: true,
+  // The second "c" is a kyrillic "s";
+  const COMMISSION_REGEX_STRING = "[cс]omm(?:ission)?s?";
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_COMMISSION_SELECTOR = {
+    operator: "or",
+    operands: [
+      { target: "name", pattern: /\bauction\b/i },
+      {
+        target: "name",
+        pattern: new RegExp(`(?:^|\\W)${COMMISSION_REGEX_STRING}\\b`, "i"),
       },
+      { target: "name", pattern: /\bwing.its?\b/i },
+    ],
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_DISCOUNTS_SELECTOR = {
+    operator: "or",
+    operands: [
+      { target: "name", pattern: /\bdiscount\b/i },
+      { target: "name", pattern: /\bsale\b/i },
+    ],
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_MEMBERSHIPS_SELECTOR = {
+    operator: "or",
+    operands: [
+      { target: "name", pattern: /\bboosty\b/i },
+      { target: "name", pattern: /\bp[@a]treon\b/i },
+      { target: "name", pattern: /\bsub(?:scribe)?\s*star\b/i },
+    ],
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_PRICE_LIST_SELECTOR = {
+    target: "name",
+    pattern: /\bprice\b/i,
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_RAFFLES_SELECTOR = { target: "name", pattern: /\braffle\b/i };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_SHOPS_SELECTOR = {
+    operator: "or",
+    operands: [
+      { target: "name", pattern: /\bshop\b/i },
+      { target: "name", pattern: /\bfurplanet\b/i },
+      { target: "description", pattern: /\bfurplanet\b/i },
+      { target: "tags", pattern: /\bfurplanet\b/i },
+    ],
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_SLOTS_SELECTOR = {
+    target: "name",
+    pattern: /\b(?:multi)?slots?\b/i,
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_STREAM_SELECTOR = {
+    target: "name",
+    pattern: /\b(?:live)?stream\b/i,
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_TEASER_SELECTOR = {
+    operator: "or",
+    operands: [
+      { target: "name", pattern: /\bpreview\b/i },
+      { target: "name", pattern: /\bteaser\b/i },
+    ],
+  };
+
+  /** @type {AdSelector | SelectorCombiner} */
+  const AMBIGUOUS_YCH_SELECTOR = { target: "name", pattern: /\by\s+c\s+h\b/i };
+
+  /** @type {AdRules} */
+  const adRules = [
+    {
+      ruleName: "adoptables",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: { target: "name", pattern: /\badopt(?:(?:able)?s?|ing)\b/i },
     },
     {
-      specName: "WIPs",
-      name: {
-        triggers: [/\bwip\b/i],
-        isAlwaysAd: true,
-      },
-      tags: {
-        triggers: [/\bwip\b/i],
-        isAlwaysAd: true,
-      },
+      ruleName: "commission ads (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_COMMISSION_SELECTOR,
     },
     {
-      specName: "commission ads",
-      name: {
-        triggers: [/\bauction\b/i, commissionRegex, /\bwing.its?\b/i],
-        isAdExpressions: [
-          /\bclosed\b/i,
-          /\bhalfbody\b/i,
-          /\bopen(?:ed)?\b/i,
-          /\bsale\b/i,
-          /\bslots?\b/i,
-        ],
-        isNotAdExpressions: [
-          /\bfor\b/i,
-          new RegExp(`\\[${commissionRegexString}\\]`, "i"),
-          new RegExp(`^${commissionRegexString}$`, "i"),
-        ],
-      },
-      description: {
-        triggers: [/.*/i],
-        isNotAdExpressions: [userRefRegex],
-      },
-    },
-    {
-      specName: "streams by name",
-      name: {
-        triggers: [/\b(?:live)?stream\b/i],
-        isAdExpressions: [
-          /\blive\b/i,
-          /\boffline\b/i,
-          /\bonline\b/i,
-          /\bpreorders?\b/i,
-          /\bslots?\b/i,
-          /\bup\b/i,
-        ],
-      },
-    },
-    {
-      specName: "streams",
-      name: {
-        triggers: [/\bstream\b/i],
-        isAlwaysAd: true,
-      },
-      tags: {
-        triggers: [/\bstream\b/i],
-        isAlwaysAd: true,
-      },
-    },
-    {
-      specName: "YCHs by name",
-      name: {
-        triggers: [/\by ?c ?h\b/i],
-        isAdExpressions: [
-          /\bauction\b/i,
-          /\bavailable\b/i,
-          /\bdiscount\b/i,
-          /\bmultislot\b/i,
-          /\bo ?p ?e ?n\b/i,
-          /\bprice\b/i,
-          /\bpreview\b/i,
-          /\braffle\b/i,
-          /\brem(?:ind(?:er)?)?\d*\b/i,
-          /\brmd\b/i,
-          /\bsale\b/i,
-          /\bslots?\b/i,
-          /\bsold\b/i,
-          /\btaken\b/i,
-          /\busd\b/i,
-          /\b\$\d+\b/i,
-        ],
-        isNotAdExpressions: [commissionRegex, /\bfinished\b/i, /\bresult\b/i],
-      },
-      description: {
-        triggers: [/.*/i],
-        isNotAdExpressions: [userRefRegex],
-      },
-      untaggedIsAd: true,
-    },
-    {
-      specName: "YCHs by name and tag",
-      name: {
-        triggers: [/\by ?c ?h\b/i],
-      },
-      tags: {
-        triggers: [/\bauction\b/i, /\bych\b/i],
-        isAlwaysAd: true,
-      },
-    },
-    {
-      specName: "discounts",
-      name: {
-        triggers: [/\bdiscount\b/i, /\bsale\b/i],
-        isAdExpressions: [
-          /\$/,
-          /\bbase\b/i,
-          /\bclaimed\b/i,
-          /\b(?:multi)?slot\b/i,
-          /\boffer\b/i,
-          /\bprice\b/i,
+      ruleName: "commission ads (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_COMMISSION_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\bclosed\b/i },
+              { target: "name", pattern: /\bhalfbody\b/i },
+              { target: "name", pattern: /\bopen(?:ed)?\b/i },
+              { target: "name", pattern: /\bsale\b/i },
+              { target: "name", pattern: /\bslots?\b/i },
+              { target: "name", pattern: /\bych\b/i },
+            ],
+          },
         ],
       },
     },
     {
-      specName: "price lists",
-      name: {
-        triggers: [/\bprice\b/i],
-        isAdExpressions: [/\blist\b/i, /\bsheet\b/i],
-      },
+      ruleName: "convention dealers",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "or",
+        operands: [
+          { target: "tags", pattern: /\bdealers?\s+den\b/i },
+          { target: "description", pattern: /\bdealers?\s+den\b/i },
+        ]
+      }
     },
     {
-      specName: "raffles",
-      name: {
-        triggers: [/\braffle\b/i],
-        isAdExpressions: [/\bwinners?\b/i],
-      },
+      ruleName: "discounst (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_DISCOUNTS_SELECTOR,
     },
     {
-      specName: "memberships in names",
-      name: {
-        triggers: [
-          /\bboosty\b/i,
-          /\bp[@a]treon\b/i,
-          /\bsub(?:scribe)?\s?star\b/i,
-        ],
-        isAdExpressions: [
-          /\bdiscount\b/i,
-          /\bnow on\b/i,
-          /\bposted to\b/i,
-          /\bpreview\b/i,
-          /\bteaser?\b/i,
-        ],
-      },
-    },
-    {
-      specName: "memberships teasers in name and description",
-      name: {
-        triggers: [/\bpreview\b/i, /\bteaser\b/i],
-      },
-      description: {
-        triggers: [
-          /\b(?:available|n[eo]w|out)\b.*\bon\b.*\b(?:boosty|p[@a]treon|sub(?:scribe)?\s?star)\b/i,
-        ],
-        isAlwaysAd: true,
-      },
-    },
-    {
-      specName: "shops",
-      name: {
-        triggers: [/\bshop\b/i],
-        isAdExpressions: [/\bprint\b/i],
-      },
-    },
-    {
-      specName: "multislots",
-      name: {
-        triggers: [/\b(?:multi)?slots?\b/i],
-        isAdExpressions: [/\bavailable\b/i, /\bopen\b/i, /\bsketch\b/i],
-      },
-    },
-    {
-      specName: "remaining name",
-      name: {
-        triggers: [
-          /\bclosed\b/i,
-          /\bopen\b/i,
-          /\bpoll\b/i,
-          /\bpreview\b/i,
-          /\brem\b/i,
-          /\bsold\b/i,
-          /\bteaser\b/i,
-          /\bwip\b/i,
+      ruleName: "discounts (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_DISCOUNTS_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\$/ },
+              { target: "name", pattern: /\bbase\b/i },
+              { target: "name", pattern: /\bclaimed\b/i },
+              { target: "name", pattern: /\b(?:multi)?slot\b/i },
+              { target: "name", pattern: /\boffer\b/i },
+              { target: "name", pattern: /\bprice\b/i },
+            ],
+          },
         ],
       },
     },
     {
-      specName: "remaining tags",
-      tags: {
-        triggers: [/\bteaser\b/i],
+      ruleName: "memberships (ambgiuous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_MEMBERSHIPS_SELECTOR,
+    },
+    {
+      ruleName: "memberships (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          {
+            operator: "or",
+            operands: [
+              ...AMBIGUOUS_MEMBERSHIPS_SELECTOR.operands,
+              { target: "description", pattern: /\bboosty\b/i },
+              { target: "description", pattern: /\bp[@a]treon\b/i },
+              { target: "description", pattern: /\bsub(?:scribe)?\s*star\b/i },
+            ],
+          },
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\bdiscount\b/i },
+              { target: "name", pattern: /\bnow\s+on\b/i },
+              { target: "name", pattern: /\bposted\s+to\b/i },
+              { target: "name", pattern: /\bpreview\b/i },
+              { target: "name", pattern: /\bteaser?\b/i },
+              { target: "description", pattern: /\bup\s+on\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "price lists (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_PRICE_LIST_SELECTOR,
+    },
+    {
+      ruleName: "price lists (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_PRICE_LIST_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\blist\b/i },
+              { target: "name", pattern: /\bsheet\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "raffles (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_RAFFLES_SELECTOR,
+    },
+    {
+      ruleName: "raffles (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_RAFFLES_SELECTOR,
+          { target: "name", pattern: /\bwinners?\b/i },
+        ],
+      },
+    },
+    {
+      ruleName: "reminders",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "or",
+        operands: [
+          { target: "name", pattern: /\breminder+\b/i },
+          { target: "name", pattern: /^REM$/ },
+        ],
+      },
+    },
+    {
+      ruleName: "shops (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_SHOPS_SELECTOR,
+    },
+    {
+      ruleName: "shops (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_SHOPS_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\bprint\b/i },
+              { target: "description", pattern: /\bup\s+on\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "slots (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_SLOTS_SELECTOR,
+    },
+    {
+      ruleName: "slots (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_SLOTS_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\bavailable\b/i },
+              { target: "name", pattern: /\bopen\b/i },
+              { target: "name", pattern: /\bsketch\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "stream ads (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_STREAM_SELECTOR,
+    },
+    {
+      ruleName: "stream ads (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "or",
+        operands: [
+          { target: "name", pattern: /\bpicarto\.tv\b/i },
+          { target: "name", pattern: /\bstreaming\b/i },
+          {
+            operator: "and",
+            operands: [
+              AMBIGUOUS_STREAM_SELECTOR,
+              {
+                operator: "or",
+                operands: [
+                  { target: "name", pattern: /\blive\b/i },
+                  { target: "name", pattern: /\boffline\b/i },
+                  { target: "name", pattern: /\bonline\b/i },
+                  { target: "name", pattern: /\bpreorders?\b/i },
+                  { target: "name", pattern: /\bslots?\b/i },
+                  { target: "name", pattern: /\bup\b/i },
+                ],
+              },
+            ],
+          },
+          {
+            operator: "and",
+            operands: [
+              { target: "name", pattern: /\bstream\b/i },
+              { target: "tags", pattern: /\bstream\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "teasers (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_TEASER_SELECTOR,
+    },
+    {
+      ruleName: "teasers (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_TEASER_SELECTOR,
+          {
+            target: "description",
+            pattern:
+              /\b(?:available|n[eo]w|out)\b.*\bon\b.*\b(?:boosty|p[@a]treon|sub(?:scribe)?\s*star)\b/i,
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "WIPs",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          { target: "name", pattern: /\bwip\b/i },
+          { target: "tags", pattern: /\bwip\b/i },
+        ],
+      },
+    },
+    {
+      ruleName: "YCHs (ambiguous)",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: AMBIGUOUS_YCH_SELECTOR,
+    },
+    {
+      ruleName: "YCHs (definitive)",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_YCH_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\bauction\b/i },
+              { target: "name", pattern: /\bavailable\b/i },
+              { target: "name", pattern: /\bdiscount\b/i },
+              { target: "name", pattern: /\bmultislot\b/i },
+              { target: "name", pattern: /\bo\s+p\s+e\s+n\b/i },
+              { target: "name", pattern: /\bprice\b/i },
+              { target: "name", pattern: /\bpreview\b/i },
+              { target: "name", pattern: /\braffle\b/i },
+              { target: "name", pattern: /\brem(?:ind(?:er)?)?\d*\b/i },
+              { target: "name", pattern: /\brmd\b/i },
+              { target: "name", pattern: /\bsale\b/i },
+              { target: "name", pattern: /\bslots?\b/i },
+              { target: "name", pattern: /\bsold\b/i },
+              { target: "name", pattern: /\btaken\b/i },
+              { target: "name", pattern: /\busd\b/i },
+              { target: "name", pattern: /\b\$\d+\b/i },
+              { target: "tags", pattern: /^$/ },
+              { target: "tags", pattern: /\bauction\b/i },
+              { target: "tags", pattern: /\bsale\b/i },
+              { target: "tags", pattern: /\bych\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "misc ambiguous",
+      value: AMBIGUOUS_AD_THRESHOLD,
+      selector: {
+        operator: "or",
+        operands: [
+          { target: "name", pattern: /\bart\s+pack\b/i },
+          { target: "name", pattern: /\bavailable\s+now\b/i },
+          { target: "name", pattern: /\bclosed\b/i },
+          { target: "name", pattern: /\bopen\b/i },
+          { target: "name", pattern: /\bpoll\b/i },
+          { target: "name", pattern: /\brem\b/i },
+          { target: "name", pattern: /\bsold\b/i },
+          { target: "name", pattern: /\bwip\b/i },
+          { target: "tags", pattern: /\bteaser\b/i },
+        ],
+      },
+    },
+    {
+      ruleName: "completed YCHs",
+      value: -200,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_YCH_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\bfinished\b/i },
+              { target: "name", pattern: /\bresult\b/i },
+              { target: "description", pattern: /\bfinished\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "commission only names",
+      value: -200,
+      selector: {
+        operator: "or",
+        operands: [
+          {
+            target: "name",
+            pattern: new RegExp(`\\[${COMMISSION_REGEX_STRING}\\]`, "i"),
+          },
+          {
+            target: "name",
+            pattern: new RegExp(`^${COMMISSION_REGEX_STRING}$`, "i"),
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "user reference",
+      value: -200,
+      selector: {
+        operator: "or",
+        operands: [
+          {
+            target: "description",
+            pattern: /(?:by|for|from)\s+(?::(?:icon\w+|\w+icon):|@@\w+)/i,
+          },
+          {
+            target: "description",
+            pattern: /^(?:by|for|from)\s+\w+/i,
+          },
+          {
+            target: "description",
+            pattern: /ych\s+for\s+\w+/i,
+          },
+          {
+            target: "description",
+            pattern: /character\s+©\s+\w+/i,
+          },
+        ],
       },
     },
   ];
 
-  class AdvertisementCheckResult {
-    /**
-     * @param {boolean} isTagged
-     * @param {AdvertisementLevel | null} [nameResult]
-     * @param {AdvertisementLevel | null} [descriptionResult]
-     * @param {AdvertisementLevel | null} [tagsResult]
-     */
-    constructor(isTagged, nameResult, descriptionResult, tagsResult) {
-      this.#isTagged = isTagged;
-      this.#nameResult = nameResult ?? null;
-      this.#descriptionResult = descriptionResult ?? null;
-      this.#tagsResult = tagsResult ?? null;
-    }
-
-    /** @type {AdvertisementLevel | null} */
-    #nameResult = null;
-
-    /** @type {AdvertisementLevel | null} */
-    #descriptionResult = null;
-
-    /** @type {AdvertisementLevel | null} */
-    #tagsResult = null;
-
-    #isTagged = false;
-
-    /** @type {DecisionLogEntry[]} */
-    #decisionLog = [];
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get nameResult() {
-      return this.#nameResult;
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} value
-     */
-    set nameResult(value) {
-      this.#nameResult = this.#coalesceResultLevel(this.#nameResult, value);
-    }
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get descriptionResult() {
-      return this.#descriptionResult;
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} value
-     */
-    set descriptionResult(value) {
-      this.#descriptionResult = this.#coalesceResultLevel(
-        this.#descriptionResult,
-        value,
-      );
-    }
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get tagsResult() {
-      return this.#tagsResult;
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} value
-     */
-    set tagsResult(value) {
-      this.#tagsResult = this.#coalesceResultLevel(this.#tagsResult, value);
-    }
-
-    /**
-     * @returns {AdvertisementLevel | null}
-     */
-    get result() {
-      if (
-        this.#nameResult === "notAdvertisement" ||
-        this.#descriptionResult === "notAdvertisement" ||
-        this.#tagsResult === "notAdvertisement"
-      ) {
-        return "notAdvertisement";
-      }
-
-      if (
-        this.#nameResult === "advertisement" ||
-        this.#descriptionResult === "advertisement" ||
-        this.#tagsResult === "advertisement"
-      ) {
-        return "advertisement";
-      }
-
-      if (
-        this.#nameResult === "ambiguous" ||
-        this.#descriptionResult === "ambiguous" ||
-        this.#tagsResult === "ambiguous"
-      ) {
-        return "ambiguous";
-      }
-
-      return null;
-    }
-
-    /**
-     * @returns {boolean}
-     */
-    get isTagged() {
-      return this.#isTagged;
-    }
-
-    get decisionLog() {
-      return this.#decisionLog;
-    }
-
-    /**
-     * @param {DecisionLogEntry} log
-     */
-    addToLog(log) {
-      if (log.name === null && log.description === null && log.tags === null) {
-        return;
-      }
-
-      this.#decisionLog.push(log);
-    }
-
-    /**
-     * @param {AdvertisementLevel | null} current
-     * @param {AdvertisementLevel | null} newValue
-     * @returns {AdvertisementLevel | null}
-     */
-    #coalesceResultLevel(current, newValue) {
-      if (newValue === null) {
-        return current;
-      }
-
-      if (current === "notAdvertisement" || newValue === "notAdvertisement") {
-        return "notAdvertisement";
-      }
-
-      if (current === "advertisement" && newValue === "ambiguous") {
-        return current;
-      }
-
-      return newValue;
-    }
-  }
-
   /**
-   * @param {string} text
-   * @param {AdvertisementCheckSpecPart} spec
-   * @returns {[AdvertisementLevel | null, DecisionLogEntryPart | null]}
+   * An evaluator for {@link AdRules} on a submission.
    */
-  function checkAgainstAdvertisementSpec(text, spec) {
-    /** @type {AdvertisementLevel | null} */
-    let level = null;
-
-    /** @type {DecisionLogEntryPart | null} */
-    let log = null;
-
-    for (const regex of spec.triggers) {
-      if (regex.test(text)) {
-        level = "ambiguous";
-        log = { trigger: regex, level };
-        break;
-      }
+  class AdRulesEvaluator {
+    /**
+     * Create a new {@link AdRulesEvaluator}.
+     * @param {AdRules} rules - the rules to use
+     */
+    constructor(rules) {
+      this.adRuleEvaluators = rules.map((r) => new AdRuleEvaluator(r));
     }
 
-    if (level === "ambiguous") {
-      if (spec.isAlwaysAd) {
-        level = "advertisement";
-        if (log) {
-          log.isAlwaysAd = true;
-          log.level = level;
-        }
-      } else if (spec.isAdExpressions) {
-        for (const regex of spec.isAdExpressions) {
-          if (regex.test(text)) {
-            level = "advertisement";
-            if (log) {
-              log.isAdExpression = regex;
-              log.level = level;
-            }
-            break;
-          }
-        }
-      }
-    }
+    /**
+     * Explain the rating of a submission.
+     * @param {SubmissionData} submissionData - the data of the submission to explain
+     */
+    explain(submissionData) {
+      const result = this.test(submissionData);
 
-    if (level !== null && spec.isNotAdExpressions) {
-      for (const regex of spec.isNotAdExpressions) {
-        if (regex.test(text)) {
-          level = "notAdvertisement";
-          if (log) {
-            log.isNotAdExpression = regex;
-            log.level = level;
-          }
-          break;
-        }
-      }
-    }
-
-    return [level, log];
-  }
-
-  /**
-   * @param {string} submissionName
-   * @param {string} description
-   * @param {string} tags
-   * @returns {AdvertisementCheckResult}
-   */
-  function checkAgainstAdvertisementSpecs(submissionName, description, tags) {
-    const isUntagged = tags === "";
-
-    /** @type {AdvertisementCheckResult} */
-    const result = new AdvertisementCheckResult(!isUntagged);
-
-    for (const spec of advertisementCheckSpecs) {
-      const [nameResult, nameLog] = checkAgainstAdvertisementSpec(
-        submissionName,
-        {
-          triggers: [],
-          ...spec.name,
-        },
+      console.group(
+        `Submission: "${submissionData.name}" ${result.rating} -> "${result.level}"`,
       );
 
-      const [descriptionResult, descriptionLog] = checkAgainstAdvertisementSpec(
-        description,
-        {
-          triggers: [],
-          ...spec.description,
-        },
-      );
+      this.adRuleEvaluators.forEach((o) => o.explain(submissionData));
+
+      console.groupEnd();
+    }
+
+    /**
+     * Test a submission against the rules of the evaluator.
+     * @param {SubmissionData} submissionData - the data of the submission to test
+     * @returns {AdRulesResult} the rating result
+     */
+    test(submissionData) {
+      const values = this.adRuleEvaluators
+        .map((e) => e.test(submissionData))
+        .filter((e) => e !== null);
+
+      const rating = values.reduce((t, v) => t + v, 0);
 
       /** @type {AdvertisementLevel | null} */
-      let tagsResult = null;
+      let level = null;
+      if (rating >= DEFINITELY_AD_THRESHOLD) level = "advertisement";
+      else if (rating >= AMBIGUOUS_AD_THRESHOLD) level = "ambiguous";
 
-      /** @type {DecisionLogEntryPart | null} */
-      let tagsLog = null;
-
-      if (isUntagged) {
-        if (
-          (["advertisement", "ambiguous"].includes(nameResult) ||
-            ["advertisement", "ambiguous"].includes(descriptionResult)) &&
-          spec.untaggedIsAd
-        ) {
-          tagsResult = "advertisement";
-          tagsLog = {
-            level: "advertisement",
-            trigger: /^$/,
-            isAlwaysAd: true,
-          };
-        }
-      } else {
-        [tagsResult, tagsLog] = checkAgainstAdvertisementSpec(tags, {
-          triggers: [],
-          ...spec.tags,
-        });
-      }
-
-      // TODO: Maybe change the accumulation to an overall weighting algorithm.
-
-      // Parts present in the same spec are interpreted as being "AND"
-      // connected.
-      let specPartsCount = 0;
-      if (spec.name) specPartsCount++;
-      if (spec.description) specPartsCount++;
-      if (spec.tags) specPartsCount++;
-      if (specPartsCount > 1) {
-        if (spec.name && !nameResult) continue;
-        if (spec.description && !descriptionResult) continue;
-        if (spec.tags && !tagsResult) continue;
-      }
-
-      result.nameResult = nameResult;
-      result.descriptionResult = descriptionResult;
-      result.tagsResult = tagsResult;
-
-      result.addToLog({
-        specName: spec.specName,
-        level: result.result,
-        name: nameLog,
-        description: descriptionLog,
-        tags: tagsLog,
-      });
+      return { level, rating };
     }
-
-    return result;
   }
 
   /**
-   * @returns {[number, number, number]}
+   * Map a selector tree node to an evaluator instance.
+   * @param {AdSelector | SelectorCombiner} selector
+   * @return {AdSelectorEvaluator | SelectorCombinerEvaluator}
+   */
+  function mapSelectorToEvaluator(selector) {
+    if ("target" in selector) return new AdSelectorEvaluator(selector);
+    return new SelectorCombinerEvaluator(selector);
+  }
+
+  /**
+   * An evaluator for a single {@link AdRule} on a submission
+   */
+  class AdRuleEvaluator {
+    /**
+     * Create a new {@link AdRuleEvaluator}.
+     * @param {AdRule} rule - the rule to use
+     */
+    constructor({ ruleName, value, selector }) {
+      this.ruleName = ruleName;
+      this.value = value;
+      this.selectorEvaluator = mapSelectorToEvaluator(selector);
+    }
+
+    /**
+     * Explain the rating of a submission.
+     * @param {SubmissionData} submissionData - the data of the submission to explain
+     */
+    explain(submissionData) {
+      const matches = this.selectorEvaluator.test(submissionData);
+
+      const groupName = `Rule "${this.ruleName}"`;
+      if (matches) {
+        console.group(groupName + ` matches: ${this.value}`);
+      } else {
+        console.groupCollapsed(groupName);
+      }
+
+      this.selectorEvaluator.explain(submissionData);
+
+      console.groupEnd();
+    }
+
+    /**
+     * Test a submission against the rules of the evaluator.
+     * @param {SubmissionData} submissionData - the data of the submission to test
+     * @returns {number | null} the value of the rule, when there's a match; null otherwise
+     */
+    test(submissionData) {
+      if (this.selectorEvaluator.test(submissionData)) return this.value;
+      return null;
+    }
+  }
+
+  /**
+   * Map the operands of a selector combiner to evaluators.
+   * @param {(AdSelector | SelectorCombiner)[]} operands
+   * @return {(AdSelectorEvaluator | SelectorCombinerEvaluator)[]}
+   */
+  function mapOperandsToEvaluators(operands) {
+    return operands.map((o) => mapSelectorToEvaluator(o));
+  }
+
+  /**
+   * An evaluator for a {@link SelectorCombiner} on a submission
+   */
+  class SelectorCombinerEvaluator {
+    /**
+     * @param {SelectorCombiner} combiner
+     */
+    constructor({ operator, operands }) {
+      this.operator = operator;
+      this.operandEvaluators = mapOperandsToEvaluators(operands);
+    }
+
+    /**
+     * Explain the rating of a submission.
+     * @param {SubmissionData} submissionData - the data of the submission to explain
+     */
+    explain(submissionData) {
+      const matches = this.test(submissionData);
+
+      const groupName = `Combiner "${this.operator}"`;
+      if (matches) {
+        console.group(groupName + " matches");
+      } else {
+        console.groupCollapsed(groupName);
+      }
+
+      for (const o of this.operandEvaluators) {
+        const matched = o.explain(submissionData);
+        if (matched && this.operator === "or") break;
+      }
+
+      console.groupEnd();
+    }
+
+    /**
+     * Test a submission against the rules of the combiner's operands.
+     * @param {SubmissionData} submissionData - the data of the submission to test
+     * @returns {boolean} whether the combiner in total matches the submission
+     */
+    test(submissionData) {
+      switch (this.operator) {
+        case "and":
+          return this.operandEvaluators.every((o) => o.test(submissionData));
+        case "or":
+          return this.operandEvaluators.some((o) => o.test(submissionData));
+      }
+    }
+  }
+
+  /**
+   * An evaluator for an {@link AdSelector} on a submission
+   */
+  class AdSelectorEvaluator {
+    /**
+     * @param {AdSelector} selector
+     */
+    constructor({ target, pattern }) {
+      this.target = target;
+      this.pattern = pattern;
+    }
+
+    /**
+     * Explain the rating of a submission.
+     * @param {SubmissionData} submissionData - the data of the submission to explain
+     * @return {boolean} whether the submission matched the selector
+     */
+    explain(submissionData) {
+      const target = this.#getTargetString(submissionData);
+      const matched = this.pattern.test(target);
+      console.log(this.pattern, matched, target);
+      return matched;
+    }
+
+    /**
+     * Test a submission against the rules of the combiner's operands.
+     * @param {SubmissionData} submissionData - the data of the submission to test
+     * @returns {boolean} whether the selector matches the submission
+     */
+    test(submissionData) {
+      return this.pattern.test(this.#getTargetString(submissionData));
+    }
+
+    /**
+     * @param {SubmissionData} submissionData
+     * @return {string}
+     */
+    #getTargetString(submissionData) {
+      switch (this.target) {
+        case "name":
+          return submissionData.name;
+        case "tags":
+          return submissionData.tags;
+        case "description":
+          return submissionData.description;
+      }
+    }
+  }
+
+  /**
+   * Iterate over all submissions on a page and test the ad rules against them.
+   * @returns {[number, number, number]} number of ads, number of ambiguous ads, number of untagged submissions
    */
   function iterateSubmissions() {
     const figures = Array.from(
@@ -528,44 +706,41 @@
     let ambiguous = 0;
     let untagged = 0;
 
+    const evaluator = new AdRulesEvaluator(adRules);
+
     for (const figure of figures) {
       const figcaption = figure.querySelector("figcaption");
       const checkbox = figure.querySelector("input");
-      const nameAnchor = figcaption.querySelector("a");
-      const submissionName = nameAnchor.textContent;
-      const tags = figure.querySelector("img").dataset.tags;
-      const description = descriptions[checkbox.value].description;
+      const nameAnchor = figcaption?.querySelector("a");
+      const submissionName = nameAnchor?.textContent;
+      const tags = figure?.querySelector("img")?.dataset["tags"];
+      const description = descriptions[checkbox?.value ?? ""]?.description;
 
-      const result = checkAgainstAdvertisementSpecs(
-        submissionName,
-        description,
-        tags,
-      );
-      const decisionLog = result.decisionLog;
+      const submissionData = {
+        name: submissionName ?? "",
+        description: description ?? "",
+        tags: tags ?? "",
+      };
 
-      if (decisionLog.length) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = "Log";
-        button.addEventListener("click", () => console.log(result.decisionLog));
-        checkbox.parentElement.appendChild(button);
+      const result = evaluator.test(submissionData);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `Ad-rating: ${result.rating}`;
+      button.addEventListener("click", () => evaluator.explain(submissionData));
+      checkbox?.parentElement?.appendChild(button);
+
+      if (result.level === "advertisement") {
+        figure.classList.add("advertisement");
+        if (checkbox) checkbox.checked = true;
+        advertisements += 1;
+      } else if (result.level === "ambiguous") {
+        figure.classList.add("maybe-advertisement");
+        ambiguous += 1;
       }
 
-      switch (result.result) {
-        case "advertisement":
-          figure.classList.add("advertisement");
-          checkbox.checked = true;
-          advertisements += 1;
-          break;
-
-        case "ambiguous":
-          figure.classList.add("maybe-advertisement");
-          ambiguous += 1;
-          break;
-      }
-
-      if (!result.isTagged) {
-        figcaption.classList.add("not-tagged");
+      if (tags === "") {
+        figcaption?.classList.add("not-tagged");
         untagged += 1;
       }
     }
@@ -587,9 +762,7 @@ figcaption button { line-height: 1; margin-left: 1rem; padding: 0; }
   const sectionHeader = document.querySelector(".section-header");
 
   const advertisementsSelectMessage = document.createElement("p");
-  advertisementsSelectMessage.textContent =
-    "Checking for advertisement submissions…";
-  sectionHeader.appendChild(advertisementsSelectMessage);
+  sectionHeader?.appendChild(advertisementsSelectMessage);
 
   const [advertisements, ambiguous, untagged] = iterateSubmissions();
 

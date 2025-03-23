@@ -4,7 +4,16 @@
   "compilerOptions": {
     "checkJs": true,
     "composite": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "lib": ["DOM", "ES2023"],
+    "strict": true,
     "target": "ES2023"
   }
 }
