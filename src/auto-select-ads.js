@@ -48,13 +48,20 @@
       { target: "name", pattern: /\bboosty\b/i },
       { target: "name", pattern: /\bp[@a]treon\b/i },
       { target: "name", pattern: /\bsub(?:scribe)?\s*star\b/i },
+      { target: "name", pattern: /\bsupporters?\b/i },
+      { target: "tags", pattern: /\bboosty\b/i },
+      { target: "tags", pattern: /\bp[@a]treon\b/i },
+      { target: "tags", pattern: /\bsub(?:scribe)?\s*star\b/i },
     ],
   };
 
   /** @type {AdSelector | SelectorCombiner} */
   const AMBIGUOUS_PRICE_LIST_SELECTOR = {
-    target: "name",
-    pattern: /\bprice\b/i,
+    operator: "or",
+    operands: [
+      { target: "name", pattern: /\bprice\s+(?:list|sheet)\b/i },
+      { target: "name", pattern: /\bcommission\s+info/i },
+    ],
   };
 
   /** @type {AdSelector | SelectorCombiner} */
@@ -73,8 +80,11 @@
 
   /** @type {AdSelector | SelectorCombiner} */
   const AMBIGUOUS_SLOTS_SELECTOR = {
-    target: "name",
-    pattern: /\b(?:multi)?slots?\b/i,
+    operator: "or",
+    operands: [
+      { target: "name", pattern: /\b(?:multi)?slots?\b/i },
+      { target: "name", pattern: /\bart\s+marathon\b/i },
+    ],
   };
 
   /** @type {AdSelector | SelectorCombiner} */
@@ -93,14 +103,25 @@
   };
 
   /** @type {AdSelector | SelectorCombiner} */
-  const AMBIGUOUS_YCH_SELECTOR = { target: "name", pattern: /\by\s+c\s+h\b/i };
+  const AMBIGUOUS_YCH_SELECTOR = { target: "name", pattern: /\by\s*c\s*h\b/i };
 
   /** @type {AdRules} */
   const adRules = [
     {
       ruleName: "adoptables",
       value: DEFINITELY_AD_THRESHOLD,
-      selector: { target: "name", pattern: /\badopt(?:(?:able)?s?|ing)\b/i },
+      selector: {
+        operator: "or",
+        operands: [
+          { target: "name", pattern: /\badopt(?:(?:able)?s?|ing|ion)\b/i },
+          { target: "name", pattern: /\bcustoms\b/i },
+          { target: "tags", pattern: /\badopt(?:(?:able)?s?|ing|ion)\b/i },
+          {
+            target: "description",
+            pattern: /\badopt(?:(?:able)?s?|ing|ion)\b/i,
+          },
+        ],
+      },
     },
     {
       ruleName: "commission ads (ambiguous)",
@@ -136,8 +157,8 @@
         operands: [
           { target: "tags", pattern: /\bdealers?\s+den\b/i },
           { target: "description", pattern: /\bdealers?\s+den\b/i },
-        ]
-      }
+        ],
+      },
     },
     {
       ruleName: "discounst (ambiguous)",
@@ -193,7 +214,11 @@
               { target: "name", pattern: /\bposted\s+to\b/i },
               { target: "name", pattern: /\bpreview\b/i },
               { target: "name", pattern: /\bteaser?\b/i },
+              { target: "name", pattern: /\bup\s+on\b/i },
+              { target: "name", pattern: /\bis\s+up\b/i },
               { target: "description", pattern: /\bup\s+on\b/i },
+              { target: "description", pattern: /\bfull.*\s+on\b/i },
+              { target: "description", pattern: /\bexclusive(?:ly)?.+for\b/i },
             ],
           },
         ],
@@ -213,10 +238,7 @@
           AMBIGUOUS_PRICE_LIST_SELECTOR,
           {
             operator: "or",
-            operands: [
-              { target: "name", pattern: /\blist\b/i },
-              { target: "name", pattern: /\bsheet\b/i },
-            ],
+            operands: [],
           },
         ],
       },
@@ -375,7 +397,13 @@
       selector: {
         operator: "and",
         operands: [
-          AMBIGUOUS_YCH_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              AMBIGUOUS_YCH_SELECTOR,
+              { target: "name", pattern: /^closed$/i },
+            ],
+          },
           {
             operator: "or",
             operands: [
@@ -399,6 +427,7 @@
               { target: "tags", pattern: /\bauction\b/i },
               { target: "tags", pattern: /\bsale\b/i },
               { target: "tags", pattern: /\bych\b/i },
+              { target: "description", pattern: /\bSB|starting\s+bid\b/i },
             ],
           },
         ],
@@ -411,6 +440,7 @@
         operator: "or",
         operands: [
           { target: "name", pattern: /\bart\s+pack\b/i },
+          { target: "name", pattern: /\bart.+earlier\b/i },
           { target: "name", pattern: /\bavailable\s+now\b/i },
           { target: "name", pattern: /\bclosed\b/i },
           { target: "name", pattern: /\bopen\b/i },
@@ -419,6 +449,17 @@
           { target: "name", pattern: /\bsold\b/i },
           { target: "name", pattern: /\bwip\b/i },
           { target: "tags", pattern: /\bteaser\b/i },
+          { target: "description", pattern: /\brules:/i },
+        ],
+      },
+    },
+    {
+      ruleName: "misc definitive",
+      value: DEFINITELY_AD_THRESHOLD,
+      selector: {
+        operator: "or",
+        operands: [
+          { target: "name", pattern: /\bcharacters?\s+for\s+sale\b/i },
         ],
       },
     },
@@ -465,20 +506,12 @@
         operands: [
           {
             target: "description",
-            pattern: /(?:by|for|from)\s+(?::(?:icon\w+|\w+icon):|@@\w+)/i,
+            pattern: /\b(?:by|for|from)\s+(?::(?:icon\w+|\w+icon):|@@\w+)/i,
           },
-          {
-            target: "description",
-            pattern: /^(?:by|for|from)\s+\w+/i,
-          },
-          {
-            target: "description",
-            pattern: /ych\s+for\s+\w+/i,
-          },
-          {
-            target: "description",
-            pattern: /character\s+©\s+\w+/i,
-          },
+          { target: "description", pattern: /^(?:by|for|from)\s+\w+/i },
+          { target: "description", pattern: /\bych\s+for\s+\w+/i },
+          { target: "description", pattern: /\bcharacter\s+©\s+\w+/i },
+          { target: "description", pattern: /\bcommission\s+for\b$/im },
         ],
       },
     },
