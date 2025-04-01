@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select advertisements
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      0.2.0
+// @version      0.2.1
 // @description  This automatically selects submission notifications, that are advertisements.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -16,7 +16,7 @@
   const DEFINITELY_AD_THRESHOLD = 50;
   const AMBIGUOUS_AD_THRESHOLD = 25;
 
-  // The second "c" is a kyrillic "s";
+  // The second "c" is a Cyrillic "s";
   const COMMISSION_REGEX_STRING = "[cс]omm(?:ission)?s?";
 
   /** @type {AdSelector | SelectorCombiner} */
@@ -103,7 +103,10 @@
   };
 
   /** @type {AdSelector | SelectorCombiner} */
-  const AMBIGUOUS_YCH_SELECTOR = { target: "name", pattern: /\by\s*c\s*h\b/i };
+  const AMBIGUOUS_YCH_SELECTOR = {
+    target: "name",
+    pattern: /\by\s*c\s*h\s*s?\b/i,
+  };
 
   /** @type {AdRules} */
   const adRules = [
@@ -161,7 +164,7 @@
       },
     },
     {
-      ruleName: "discounst (ambiguous)",
+      ruleName: "discounts (ambiguous)",
       value: AMBIGUOUS_AD_THRESHOLD,
       selector: AMBIGUOUS_DISCOUNTS_SELECTOR,
     },
@@ -279,16 +282,22 @@
       ruleName: "shops (definitive)",
       value: DEFINITELY_AD_THRESHOLD,
       selector: {
-        operator: "and",
+        operator: "or",
         operands: [
-          AMBIGUOUS_SHOPS_SELECTOR,
           {
-            operator: "or",
+            operator: "and",
             operands: [
-              { target: "name", pattern: /\bprint\b/i },
-              { target: "description", pattern: /\bup\s+on\b/i },
+              AMBIGUOUS_SHOPS_SELECTOR,
+              {
+                operator: "or",
+                operands: [
+                  { target: "name", pattern: /\bprint\b/i },
+                  { target: "description", pattern: /\bup\s+on\b/i },
+                ],
+              },
             ],
           },
+          { target: "tags", pattern: /\bmerch\b/i },
         ],
       },
     },
@@ -464,19 +473,14 @@
       },
     },
     {
-      ruleName: "completed YCHs",
+      ruleName: "comic pages",
       value: -200,
       selector: {
-        operator: "and",
+        operator: "or",
         operands: [
-          AMBIGUOUS_YCH_SELECTOR,
           {
-            operator: "or",
-            operands: [
-              { target: "name", pattern: /\bfinished\b/i },
-              { target: "name", pattern: /\bresult\b/i },
-              { target: "description", pattern: /\bfinished\b/i },
-            ],
+            target: "name",
+            pattern: /\bpage\s+\d+/i,
           },
         ],
       },
@@ -499,6 +503,24 @@
       },
     },
     {
+      ruleName: "completed YCHs",
+      value: -200,
+      selector: {
+        operator: "and",
+        operands: [
+          AMBIGUOUS_YCH_SELECTOR,
+          {
+            operator: "or",
+            operands: [
+              { target: "name", pattern: /\bfinished\b/i },
+              { target: "name", pattern: /\bresult\b/i },
+              { target: "description", pattern: /\bfinished\b/i },
+            ],
+          },
+        ],
+      },
+    },
+    {
       ruleName: "user reference",
       value: -200,
       selector: {
@@ -506,12 +528,21 @@
         operands: [
           {
             target: "description",
-            pattern: /\b(?:by|for|from)\s+(?::(?:icon\w+|\w+icon):|@@\w+)/i,
+            pattern:
+              /\b(?:by|for|from)\s+(?::(?:icon[\w-]+|[\w-]+icon):|@@\w+)/i,
           },
           { target: "description", pattern: /^(?:by|for|from)\s+\w+/i },
           { target: "description", pattern: /\bych\s+for\s+\w+/i },
           { target: "description", pattern: /\bcharacter\s+©\s+\w+/i },
+          {
+            target: "description",
+            pattern: /\bcharacter\s+belongs\s+to\s+@@\w+/i,
+          },
           { target: "description", pattern: /\bcommission\s+for\b$/im },
+          {
+            target: "description",
+            pattern: /\bpatreon\s+reward\s+for\s+\w+/i,
+          },
         ],
       },
     },
