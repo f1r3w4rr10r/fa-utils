@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select advertisements
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      0.2.1
+// @version      0.2.2
 // @description  This automatically selects submission notifications, that are advertisements.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -17,7 +17,7 @@
   const AMBIGUOUS_AD_THRESHOLD = 25;
 
   // The second "c" is a Cyrillic "s";
-  const COMMISSION_REGEX_STRING = "[cс]omm(?:ission)?s?";
+  const COMMISSION_REGEX_STRING = "[cс]omm?(?:ission)?s?";
 
   /** @type {AdSelector | SelectorCombiner} */
   const AMBIGUOUS_COMMISSION_SELECTOR = {
@@ -84,6 +84,7 @@
     operands: [
       { target: "name", pattern: /\b(?:multi)?slots?\b/i },
       { target: "name", pattern: /\bart\s+marathon\b/i },
+      { target: "description", pattern: /\d\s+slots\b/i },
     ],
   };
 
@@ -98,14 +99,24 @@
     operator: "or",
     operands: [
       { target: "name", pattern: /\bpreview\b/i },
+      { target: "name", pattern: /\bspoiler\b/i },
       { target: "name", pattern: /\bteaser\b/i },
     ],
   };
 
   /** @type {AdSelector | SelectorCombiner} */
   const AMBIGUOUS_YCH_SELECTOR = {
-    target: "name",
-    pattern: /\by\s*c\s*h\s*s?\b/i,
+    operator: "or",
+    operands: [
+      {
+        target: "name",
+        pattern: /\by\s*c\s*h\s*s?\b/i,
+      },
+      {
+        target: "description",
+        pattern: /\by\s*c\s*h\s*s?\b/i,
+      },
+    ],
   };
 
   /** @type {AdRules} */
@@ -213,7 +224,7 @@
             operator: "or",
             operands: [
               { target: "name", pattern: /\bdiscount\b/i },
-              { target: "name", pattern: /\bnow\s+on\b/i },
+              { target: "name", pattern: /\b(?:available|now)\s+on\b/i },
               { target: "name", pattern: /\bposted\s+to\b/i },
               { target: "name", pattern: /\bpreview\b/i },
               { target: "name", pattern: /\bteaser?\b/i },
@@ -437,6 +448,10 @@
               { target: "tags", pattern: /\bsale\b/i },
               { target: "tags", pattern: /\bych\b/i },
               { target: "description", pattern: /\bSB|starting\s+bid\b/i },
+              {
+                target: "description",
+                pattern: /https?:\/\/ych\.art\/auction\/\d+/i,
+              },
             ],
           },
         ],
@@ -469,6 +484,7 @@
         operator: "or",
         operands: [
           { target: "name", pattern: /\bcharacters?\s+for\s+sale\b/i },
+          { target: "description", pattern: /\bpoll\s+is\s+up\b/i },
         ],
       },
     },
@@ -526,24 +542,55 @@
       selector: {
         operator: "or",
         operands: [
+          { target: "name", pattern: /\bfor\s+[\w\-.]+/i },
           {
             target: "description",
             pattern:
-              /\b(?:by|for|from)\s+(?::(?:icon[\w-]+|[\w-]+icon):|@@\w+)/i,
+              /\b(?:by|for|from):?\s+(?::(?:icon[\w\-.]+|[\w\-.]+icon):|@?@\w+)/i,
+          },
+          {
+            target: "description",
+            pattern: /^:(?:icon[\w\-.]+|[\w\-.]+icon):$/i,
           },
           { target: "description", pattern: /^(?:by|for|from)\s+\w+/i },
           { target: "description", pattern: /\bych\s+for\s+\w+/i },
           { target: "description", pattern: /\bcharacter\s+©\s+\w+/i },
           {
             target: "description",
-            pattern: /\bcharacter\s+belongs\s+to\s+@@\w+/i,
+            pattern: /\bcharacter\s+belongs\s+to\s+@?@\w+/i,
           },
           { target: "description", pattern: /\bcommission\s+for\b$/im },
+          {
+            target: "description",
+            pattern:
+              /(?:©|\(c\))\s*(?::(?:icon[\w\-.]+|[\w\-.]+icon):|@?@\w+)$/im,
+          },
           {
             target: "description",
             pattern: /\bpatreon\s+reward\s+for\s+\w+/i,
           },
         ],
+      },
+    },
+    {
+      ruleName: "artist reference",
+      value: -200,
+      selector: {
+        operator: "or",
+        operands: [
+          {
+            target: "description",
+            pattern: /🎨\s*:\s*(?::(?:icon[\w\-.]+|[\w\-.]+icon):|@?@\w+)/i,
+          },
+        ],
+      },
+    },
+    {
+      ruleName: "rewards",
+      value: -200,
+      selector: {
+        operator: "or",
+        operands: [{ target: "description", pattern: /\breward\s+sketch\b/i }],
       },
     },
   ];
