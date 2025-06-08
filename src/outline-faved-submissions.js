@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Outline already faved
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.0
+// @version      1.0.1
 // @description  This automatically outlines submissions, that are already faved.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/gallery/*
@@ -19,12 +19,16 @@
    * @returns {Promise<boolean>}
    */
   async function checkIfFaved(figure) {
-    const url = figure.querySelector("a").href;
+    const url = figure.querySelector("a")?.href;
+    if (!url) {
+      console.error("Could not extract URL from figure.", figure);
+      throw new Error(`Could not extract URL from figure.`);
+    }
+
     const result = await fetch(url);
     if (!result.ok) {
-      throw new Error(
-        `Could not get faved status: ${result.status} ${result.statusText} ${url}`,
-      );
+      console.error("Could not get faved status.", url, result);
+      throw new Error("Could not get faved status");
     }
 
     const doc = new DOMParser().parseFromString(
@@ -32,17 +36,8 @@
       "text/html",
     );
 
-    const firstButton = doc.querySelector(".favorite-nav a:first-child");
-    const secondButton = doc.querySelector(".favorite-nav a:nth-child(2)");
-    if (
-      !(firstButton instanceof HTMLAnchorElement) ||
-      !(secondButton instanceof HTMLAnchorElement)
-    )
-      throw new Error(`One of the buttons could not be found on: ${url}`);
-
-    if (/\bunfav\b/.test(firstButton.href)) return true;
-    if (/\bunfav\b/.test(secondButton.href)) return true;
-    return false;
+    const unfavButton = doc.querySelector('.favorite-nav > [href^="/unfav/"]');
+    return unfavButton instanceof HTMLAnchorElement;
   }
 
   /**
@@ -64,13 +59,14 @@
   sheet.replaceSync("figure.faved { outline: green 3px solid; }");
   document.adoptedStyleSheets.push(sheet);
 
-  const sectionHeader = document.querySelector(".submission-list");
+  const submissionList = document.querySelector(".submission-list");
+  if (!submissionList) throw new Error("Could not find the submission list.");
 
   const baseMessage = "Selecting faved submissions…";
 
   const messagePara = document.createElement("p");
   messagePara.textContent = baseMessage;
-  sectionHeader.prepend(messagePara);
+  submissionList.prepend(messagePara);
 
   let checked = 0;
   let faved = 0;

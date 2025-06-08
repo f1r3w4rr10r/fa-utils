@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select unwatched
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.0
+// @version      1.0.1
 // @description  This automatically selects submission notifications from unwatched users on the current FurAffinity notifications page.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -20,9 +20,8 @@
   async function getWatchedFromPage(url) {
     const result = await fetch(url);
     if (!result.ok) {
-      throw new Error(
-        `Could not get watchlist: ${result.status} ${result.statusText} ${url}`,
-      );
+      console.error("Could not get watchlist.", url, result);
+      throw new Error("Could not get watchlist.");
     }
     const doc = new DOMParser().parseFromString(
       await result.text(),
@@ -50,8 +49,13 @@
     if (!(userAnchor instanceof HTMLAnchorElement))
       throw new Error("Could not get the user anchor.");
 
-    const userName = userAnchor.href.match(/user\/(.+?)$/)[1];
+    const urlMatch = userAnchor.href.match(/user\/(.+?)$/);
+    if (!urlMatch) throw new Error("The user profile URL did not match.");
 
+    const userName = urlMatch[1];
+    if (!userName) throw new Error("Could not extract a user name.");
+
+    /** @type {string | null} */
     let nextUrl = `https://www.furaffinity.net/watchlist/by/${userName}/`;
 
     while (nextUrl !== null) {
@@ -74,6 +78,10 @@
     let selected = 0;
 
     for (const figure of figures) {
+      const checkbox = figure.querySelector("input");
+      if (!(checkbox instanceof HTMLInputElement))
+        throw new Error("Could not find a checkbox.");
+
       const userAnchor = figure.querySelector(
         "figcaption label p:last-child a",
       );
@@ -85,7 +93,7 @@
       if (watched.includes(userLink)) continue;
 
       figure.classList.add("unwatched");
-      figure.querySelector("input").checked = true;
+      checkbox.checked = true;
       selected += 1;
     }
 
@@ -97,6 +105,7 @@
   document.adoptedStyleSheets.push(sheet);
 
   const sectionHeader = document.querySelector(".section-header");
+  if (!sectionHeader) throw new Error("Could not find the section header.");
 
   const unwatchedSelectMessage = document.createElement("p");
   unwatchedSelectMessage.textContent =

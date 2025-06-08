@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add a "Remove Selected" button
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.0
+// @version      1.0.1
 // @description  This adds a second "Remove Selected" button to the top of the submission notifications pages.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -16,6 +16,8 @@
   const topButtonsContainer = document.querySelector(
     "section.gallery-section .aligncenter",
   );
+  if (!topButtonsContainer)
+    throw new Error("Could not find the top buttons container.");
 
   const button = document.createElement("button");
   button.className = "standard remove-checked";

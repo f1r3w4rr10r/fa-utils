@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select already faved
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.0
+// @version      1.0.1
 // @description  This automatically selects submission notifications, that are already faved.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -18,12 +18,16 @@
    * @returns {Promise<boolean>}
    */
   async function checkIfFaved(figure) {
-    const url = figure.querySelector("a").href;
+    const url = figure.querySelector("a")?.href;
+    if (!url) {
+      console.error("Could not extract URL from figure.", figure);
+      throw new Error(`Could not extract URL from figure.`);
+    }
+
     const result = await fetch(url);
     if (!result.ok) {
-      throw new Error(
-        `Could not get faved status: ${result.status} ${result.statusText} ${url}`,
-      );
+      console.error("Could not get faved status.", url, result);
+      throw new Error("Could not get faved status");
     }
 
     const doc = new DOMParser().parseFromString(
@@ -31,17 +35,8 @@
       "text/html",
     );
 
-    const firstButton = doc.querySelector(".favorite-nav a:first-child");
-    const secondButton = doc.querySelector(".favorite-nav a:nth-child(2)");
-    if (
-      !(firstButton instanceof HTMLAnchorElement) ||
-      !(secondButton instanceof HTMLAnchorElement)
-    )
-      throw new Error(`One of the buttons could not be found on: ${url}`);
-
-    if (/\bunfav\b/.test(firstButton.href)) return true;
-    if (/\bunfav\b/.test(secondButton.href)) return true;
-    return false;
+    const unfavButton = doc.querySelector('.favorite-nav > [href^="/unfav/"]');
+    return unfavButton instanceof HTMLAnchorElement;
   }
 
   /**
@@ -53,10 +48,14 @@
     );
 
     for (const figure of figures) {
+      const checkbox = figure.querySelector("input");
+      if (!(checkbox instanceof HTMLInputElement))
+        throw new Error("Could not find a checkbox.");
+
       const isFaved = await checkIfFaved(figure);
       if (isFaved) {
         figure.classList.add("faved");
-        figure.querySelector("input").checked = true;
+        checkbox.checked = true;
       }
       yield isFaved;
     }
@@ -67,6 +66,7 @@
   document.adoptedStyleSheets.push(sheet);
 
   const sectionHeader = document.querySelector(".section-header");
+  if (!sectionHeader) throw new Error("Could not find the section header.");
 
   const baseMessage = "Selecting faved submissions…";
 
