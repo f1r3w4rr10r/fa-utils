@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add a "Remove Notification" button to submissions
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.0
+// @version      1.0.1
 // @description  This adds a "Remove Notification" button next to the "+Fav" buttons.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/view/*
@@ -13,14 +13,14 @@
 (async function () {
   "use strict";
 
-  const upperFavLink = document.querySelector('.fav > [href^="/fav/"]');
+  const upperFavLink = document.querySelector(".fav > a");
   if (!(upperFavLink instanceof HTMLAnchorElement))
     throw new Error(
       "'upperFavLink' was not an instance of 'HTMLAnchorElement'.",
     );
 
   const href = upperFavLink.href;
-  const urlMatch = href.match(/\/fav\/(\d+)\//);
+  const urlMatch = href.match(/\/(?:un)?fav\/(\d+)\//);
   if (!urlMatch) {
     console.error("The fav URL did not match.", href);
     throw new Error("The fav URL did not match.");
@@ -30,7 +30,7 @@
   if (!submissionId) throw new Error("Could not extract a submission ID.");
 
   const lowerFavLink = document.querySelector(
-    '.favorite-nav > [href^="/fav/"]',
+    '.favorite-nav > [href^="/fav/"], .favorite-nav > [href^="/unfav/"]',
   );
   if (!(lowerFavLink instanceof HTMLAnchorElement))
     throw new Error(
@@ -39,13 +39,15 @@
 
   /**
    * @param {string} id the submission ID
-   * @returns {HTMLButtonElement}
+   * @returns {HTMLAnchorElement}
    */
   function createNotifRemoveButton(id) {
-    const button = document.createElement("button");
-    button.textContent = "- S";
-    button.addEventListener("click", async () => {
-      button.textContent = "⟳";
+    const anchor = document.createElement("a");
+    anchor.href = "#";
+    anchor.textContent = "- S";
+
+    anchor.addEventListener("click", async () => {
+      anchor.textContent = "⟳";
 
       const result = await fetch("/msg/submissions/old@24/", {
         method: "POST",
@@ -58,18 +60,28 @@
 
       if (result.type !== "opaqueredirect") {
         console.error("Could not remove the submission notification.", result);
-        button.textContent = "☓";
+        anchor.textContent = "☓";
       }
 
-      button.textContent = "✓";
+      anchor.textContent = "✓";
     });
 
-    return button;
+    return anchor;
   }
 
   const upperButton = createNotifRemoveButton(submissionId);
-  upperFavLink.parentElement?.insertAdjacentElement("beforebegin", upperButton);
+
+  const upperButtonDiv = document.createElement("div");
+  upperButtonDiv.style.flexGrow = "0.5";
+  upperButtonDiv.appendChild(upperButton);
+
+  upperFavLink.parentElement?.insertAdjacentElement("afterend", upperButtonDiv);
 
   const lowerButton = createNotifRemoveButton(submissionId);
-  lowerFavLink.insertAdjacentElement("beforebegin", lowerButton);
+  lowerButton.className = "button standard mobile-fix";
+
+  lowerFavLink.insertAdjacentElement("afterend", lowerButton);
+
+  lowerButton.insertAdjacentText("beforebegin", " ");
+  lowerButton.insertAdjacentText("afterend", " ");
 })();
