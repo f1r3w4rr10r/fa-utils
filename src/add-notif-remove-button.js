@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add a "Remove Notification" button to submissions
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.1
+// @version      1.0.2
 // @description  This adds a "Remove Notification" button next to the "+Fav" buttons.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/view/*
@@ -43,7 +43,7 @@
    */
   function createNotifRemoveButton(id) {
     const anchor = document.createElement("a");
-    anchor.href = "#";
+    anchor.href = "javascript:void(0)";
     anchor.textContent = "- S";
 
     anchor.addEventListener("click", async () => {
