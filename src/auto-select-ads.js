@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select advertisements
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      0.2.2
+// @version      0.3.0
 // @description  This automatically selects submission notifications, that are advertisements.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -836,6 +836,9 @@
       const result = evaluator.test(submissionData);
 
       const button = document.createElement("button");
+      button.className = "button";
+      button.style.lineHeight = "unset";
+      button.style.padding = "0";
       button.type = "button";
       button.textContent = `Ad-rating: ${result.rating}`;
       button.addEventListener("click", () => evaluator.explain(submissionData));

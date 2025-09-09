@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select unwatched
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.1
+// @version      1.1.0
 // @description  This automatically selects submission notifications from unwatched users on the current FurAffinity notifications page.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -14,8 +14,8 @@
   "use strict";
 
   /**
-   * @param {string} url
-   * @returns {Promise<[string[], string | null]>}
+   * @param {URL} url
+   * @returns {Promise<[string[], URL | null]>}
    */
   async function getWatchedFromPage(url) {
     const result = await fetch(url);
@@ -28,15 +28,26 @@
       "text/html",
     );
 
-    const userLinks = Array.from(doc.querySelectorAll("a")).map((a) => a.href);
+    const userLinks = Array.from(
+      /** @type {HTMLAnchorElement[]} */ (
+        Array.from(doc.querySelectorAll(".watch-list a"))
+      ),
+    ).map((a) => a.href);
 
     const nextForm = doc.querySelector(".floatright form");
     if (!(nextForm instanceof HTMLFormElement))
       throw new Error(`Could not find the next page form on: ${url}`);
 
-    const nextUrl = nextForm.action;
+    const pageInput = /** @type {HTMLInputElement | null} */ (
+      nextForm.querySelector('input[name="page"]')
+    );
 
-    return [userLinks, nextUrl === url ? null : nextUrl];
+    const nextButton = nextForm.querySelector("button");
+
+    const nextUrl = new URL(nextForm.action);
+    if (pageInput) nextUrl.searchParams.set("page", pageInput.value);
+
+    return [userLinks, nextButton?.disabled ? null : nextUrl];
   }
 
   /**
@@ -55,8 +66,10 @@
     const userName = urlMatch[1];
     if (!userName) throw new Error("Could not extract a user name.");
 
-    /** @type {string | null} */
-    let nextUrl = `https://www.furaffinity.net/watchlist/by/${userName}/`;
+    /** @type {URL | null} */
+    let nextUrl = new URL(
+      `https://www.furaffinity.net/watchlist/by/${userName}/`,
+    );
 
     while (nextUrl !== null) {
       let pageWatchList = [];
