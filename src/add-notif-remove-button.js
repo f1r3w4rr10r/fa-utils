@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add a "Remove Notification" button to submissions
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.3
+// @version      1.0.4
 // @description  This adds a "Remove Notification" button next to the "+Fav" buttons.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/view/*
@@ -13,11 +13,12 @@
 (async function () {
   "use strict";
 
-  const upperFavLink = document.querySelector(".fav > a");
-  if (!(upperFavLink instanceof HTMLAnchorElement))
+  const upperFavLink = document.querySelector(".submission-controls-upper > a");
+  if (!(upperFavLink instanceof HTMLAnchorElement)) {
     throw new Error(
       "'upperFavLink' was not an instance of 'HTMLAnchorElement'.",
     );
+  }
 
   const href = upperFavLink.href;
   const urlMatch = href.match(/\/(?:un)?fav\/(\d+)\//);
@@ -30,7 +31,7 @@
   if (!submissionId) throw new Error("Could not extract a submission ID.");
 
   const lowerFavLink = document.querySelector(
-    '.favorite-nav > [href^="/fav/"], .favorite-nav > [href^="/unfav/"]',
+    '#submission-options > [href^="/fav/"], #submission-options > [href^="/unfav/"]',
   );
   if (!(lowerFavLink instanceof HTMLAnchorElement))
     throw new Error(

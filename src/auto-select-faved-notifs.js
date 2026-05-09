@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-select already faved
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.1
+// @version      1.0.2
 // @description  This automatically selects submission notifications, that are already faved.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/msg/submissions/*
@@ -35,7 +35,9 @@
       "text/html",
     );
 
-    const unfavButton = doc.querySelector('.favorite-nav > [href^="/unfav/"]');
+    const unfavButton = doc.querySelector(
+      '#submission-options > [href^="/unfav/"]'
+    );
     return unfavButton instanceof HTMLAnchorElement;
   }
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Auto-remove notifications on fave
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.1
+// @version      1.0.2
 // @description  This automatically removes submission notifications, when faving a submission.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/view/*
@@ -15,7 +15,7 @@
 
   const favLinks = Array.from(
     document.querySelectorAll(
-      '.favorite-nav > [href^="/fav/"], .fav > [href^="/fav/"]',
+      '#submission-options > [href^="/fav/"], .submission-controls-upper > [href^="/fav/"]',
     ),
   );
 
