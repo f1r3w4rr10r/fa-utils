@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Add a "Remove Notification" button to submissions
 // @namespace    https://github.com/f1r3w4rr10r/fa-utils
-// @version      1.0.4
+// @version      1.0.5
 // @description  This adds a "Remove Notification" button next to the "+Fav" buttons.
 // @author       f1r3w4rr10r
 // @match        https://www.furaffinity.net/view/*
@@ -42,8 +42,9 @@
    * @param {string} id the submission ID
    * @returns {HTMLAnchorElement}
    */
-  function createNotifRemoveButton(id) {
+  function createNotificationRemoveButton(id) {
     const anchor = document.createElement("a");
+    anchor.className = "button standard mobile-fix";
     anchor.href = "javascript:void(0)";
     anchor.textContent = "- S";
 
@@ -71,19 +72,12 @@
     return anchor;
   }
 
-  const upperButton = createNotifRemoveButton(submissionId);
+  const upperButton = createNotificationRemoveButton(submissionId);
+  upperFavLink.insertAdjacentElement("afterend", upperButton);
+  upperButton.insertAdjacentText("beforebegin", " ");
 
-  const upperButtonDiv = document.createElement("div");
-  upperButtonDiv.style.flexGrow = "0.5";
-  upperButtonDiv.appendChild(upperButton);
-
-  upperFavLink.parentElement?.insertAdjacentElement("afterend", upperButtonDiv);
-
-  const lowerButton = createNotifRemoveButton(submissionId);
-  lowerButton.className = "button standard mobile-fix";
-
+  const lowerButton = createNotificationRemoveButton(submissionId);
   lowerFavLink.insertAdjacentElement("afterend", lowerButton);
-
   lowerButton.insertAdjacentText("beforebegin", " ");
-  lowerButton.insertAdjacentText("afterend", " ");
+
 })();
